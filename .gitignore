@@ -1,0 +1,88 @@
+## A streamlined .gitignore for modern .NET/ASP.NET Core projects
+## Optimized for minimal API boilerplate and cleaner Git history.
+
+# -------------------------------------------------------------------
+# 1. BUILD OUTPUTS AND TEMPORARY FILES
+# -------------------------------------------------------------------
+
+# Binaries, object files, and build logs
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Rr]eleases/
+artifacts/
+bld/
+[Ll]og/
+[Ll]ogs/
+*.pdb            # Program Database files (debug symbols)
+*.binlog         # MSBuild Binary Log
+
+# Platform-specific build folders
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# -------------------------------------------------------------------
+# 2. VISUAL STUDIO / IDE FILES (Local Configuration)
+# -------------------------------------------------------------------
+
+# Visual Studio user options and cache
+.vs/                 
+*.user
+*.suo                
+*.log
+*.bak
+*.cache
+[Tt]emp/
+
+# Rider IDE
+.idea/
+
+# -------------------------------------------------------------------
+# 3. .NET CORE & NUGET
+# -------------------------------------------------------------------
+
+# NuGet packages (old style 'packages' folder)
+[Pp]ackages/
+*.nupkg                # NuGet Package files
+*.snupkg               # NuGet Symbol Packages
+project.lock.json
+project.fragment.lock.json
+
+# Dependencies for front-end (if using integrated setup)
+node_modules/
+
+# -------------------------------------------------------------------
+# 4. TESTING AND COVERAGE
+# -------------------------------------------------------------------
+
+# Test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+TestResult.xml
+nunit-*.xml
+*.VisualState.xml
+
+# Code Coverage results
+CodeCoverage/
+*.codecoverage
+*.opencover
+
+# -------------------------------------------------------------------
+# 5. CONFIGURATION AND SENSITIVE FILES
+# -------------------------------------------------------------------
+
+# IMPORTANT: NEVER commit app secrets or connection strings!
+# This ignores the *local* development settings file, which often
+# contains sensitive connection strings or keys.
+# (Best practice is to use Secrets Manager, but this is a safeguard)
+appsettings.Development.json
+appsettings.Local.json
+
+# IIS Express and ASP.NET scaffolding
+*.vshost.exe
+*.vshost.exe.config
+ScaffoldingReadMe.txt

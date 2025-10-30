@@ -8,7 +8,7 @@ namespace BusinessObjects.Models.DTOs.Vehicle
 {
     public class VehicleUpdateDto
     {
-        public string LicensePlate { get; set; } = string.Empty;
+        public string? LicensePlate { get; set; }
         public string? FuelType { get; set; }
         public string? TransmissionType { get; set; }
         public string? Brand { get; set; }

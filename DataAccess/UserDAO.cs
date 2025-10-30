@@ -89,7 +89,6 @@ namespace DataAccess
 
         public async Task Delete(User user)
         {
-            user.IsActive = false;
             _context.User.Update(user);
             await _context.SaveChangesAsync();
         }

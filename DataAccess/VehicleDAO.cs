@@ -95,5 +95,12 @@ namespace DataAccess
             _context.Vehicle.Update(vehicle);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<bool> IsExistByLicensePlate(string licensenPlate)
+        {
+            return await _context.Vehicle.AnyAsync(v => v.LicensePlate.ToLower().Trim().Equals(licensenPlate.ToLower().Trim()));
+        }
+
+
     }
 }

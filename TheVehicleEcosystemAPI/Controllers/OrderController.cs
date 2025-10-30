@@ -181,5 +181,62 @@ namespace TheVehicleEcosystemAPI.Controllers
                 return BadRequest(ApiResponse<string>.BadRequest(ex.Message));
             }
         }
+
+        /// <summary>
+        /// [Admin] Lấy tổng số đơn hàng trong hệ thống.
+        /// </summary>
+        [HttpGet("statistics/total-count")]
+        //[Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetTotalOrderCount()
+        {
+            try
+            {
+                int count = await _orderRepository.GetTotalOrderCountAsync();
+                return Ok(ApiResponse<int>.Success("Lấy tổng số đơn hàng thành công.", count));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy tổng số đơn hàng.");
+                return StatusCode(500, ApiResponse<string>.InternalError("Lỗi máy chủ."));
+            }
+        }
+
+        /// <summary>
+        /// [Admin] Lấy số đơn hàng đang chờ xử lý (Pending).
+        /// </summary>
+        [HttpGet("statistics/pending-count")]
+        //[Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetPendingOrderCount()
+        {
+            try
+            {
+                int count = await _orderRepository.GetPendingOrderCountAsync();
+                return Ok(ApiResponse<int>.Success("Lấy số đơn hàng PENDING thành công.", count));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy số đơn hàng PENDING.");
+                return StatusCode(500, ApiResponse<string>.InternalError("Lỗi máy chủ."));
+             }
+        }
+
+        /// <summary>
+        /// [Admin] Lấy tổng doanh thu (từ các đơn đã DELIVERED).
+        /// </summary>
+        [HttpGet("statistics/total-revenue")]
+        //[Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetTotalRevenue()
+        {
+            try
+            {
+                decimal revenue = await _orderRepository.GetTotalRevenueAsync();
+                return Ok(ApiResponse<decimal>.Success("Lấy tổng doanh thu thành công.", revenue));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy tổng doanh thu.");
+                return StatusCode(500, ApiResponse<string>.InternalError("Lỗi máy chủ."));
+            }
+        }
     }
 }

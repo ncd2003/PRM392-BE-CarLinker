@@ -31,6 +31,8 @@ namespace BusinessObjects.Models
         public int? Year { get; set; }
         public bool IsActive { get; set; } = true;
 
+        public string Image { get; set; }
+
         public int UserId { get; set; }
 
         [ForeignKey(nameof(UserId))]

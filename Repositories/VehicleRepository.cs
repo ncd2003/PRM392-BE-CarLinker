@@ -64,16 +64,14 @@ namespace Repositories
             {
                 throw new ArgumentException("License plate is required", nameof(vehicle.LicensePlate));
             }
-
-            // Set default values
-            //vehicle.IsActive = true;
-            User user = new User();
-            user.Id = 1;
-            vehicle.User = user; // Set a default user or handle accordingly
+            if (await _vehicleDAO.IsExistByLicensePlate(vehicle.LicensePlate))
+            {
+                throw new ArgumentException("License plate already existed", nameof(vehicle.LicensePlate));
+            }
             await _vehicleDAO.Add(vehicle);
         }
 
-        public async Task UpdateAsync(Vehicle vehicle)
+        public async Task UpdateAsync(int id, Vehicle vehicle)
         {
             // Validation
             if (vehicle == null)
@@ -81,18 +79,22 @@ namespace Repositories
                 throw new ArgumentNullException(nameof(vehicle), "Vehicle cannot be null");
             }
 
-            if (vehicle.Id <= 0)
+            if (id <= 0)
             {
-                throw new ArgumentException("Invalid vehicle ID", nameof(vehicle.Id));
+                throw new ArgumentException("Invalid vehicle ID", nameof(id));
             }
 
             if (string.IsNullOrWhiteSpace(vehicle.LicensePlate))
             {
                 throw new ArgumentException("License plate is required", nameof(vehicle.LicensePlate));
             }
+            if (await _vehicleDAO.IsExistByLicensePlate(vehicle.LicensePlate))
+            {
+                throw new ArgumentException("License plate already existed", nameof(vehicle.LicensePlate));
+            }
 
             // Get existing vehicle
-            var vehicleDB = await _vehicleDAO.GetById(vehicle.Id);
+            var vehicleDB = await _vehicleDAO.GetById(id);
             if (vehicleDB == null)
             {
                 throw new KeyNotFoundException($"Vehicle with ID {vehicle.Id} not found");
@@ -101,10 +103,11 @@ namespace Repositories
             // Update properties
             vehicleDB.LicensePlate = vehicle.LicensePlate;
             vehicleDB.FuelType = vehicle.FuelType;
-            vehicleDB.TransmissionType = vehicle.TransmissionType;  // ✅ Fixed: Added missing field
+            vehicleDB.TransmissionType = vehicle.TransmissionType;
             vehicleDB.Brand = vehicle.Brand;
             vehicleDB.Model = vehicle.Model;
             vehicleDB.Year = vehicle.Year;
+            vehicleDB.Image = vehicle.Image;
 
             await _vehicleDAO.Update(vehicleDB);
         }
@@ -127,6 +130,11 @@ namespace Repositories
             // Soft delete
             vehicleDB.IsActive = false;
             await _vehicleDAO.Delete(vehicleDB);
+        }
+
+        public async Task<bool> IsExistLicensePlate(string licensePlate)
+        {
+            return await _vehicleDAO.IsExistByLicensePlate(licensePlate);
         }
     }
 }

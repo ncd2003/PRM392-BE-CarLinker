@@ -3,7 +3,7 @@ using System.Security.Claims;
 namespace TheVehicleEcosystemAPI.Utils
 {
     /// <summary>
-    /// Helper class ?? l?y thông tin user t? HttpContext
+    /// Helper class ?? l?y thông tin user t? HttpContext (static methods)
     /// </summary>
     public static class UserContextHelper
     {
@@ -12,7 +12,7 @@ namespace TheVehicleEcosystemAPI.Utils
         /// </summary>
         public static int? GetUserId(ClaimsPrincipal user)
         {
-            var userIdClaim = user.Claims.FirstOrDefault(c => c.Type == "userId" || c.Type == ClaimTypes.NameIdentifier);
+            var userIdClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
             if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
             {
                 return userId;
@@ -34,14 +34,6 @@ namespace TheVehicleEcosystemAPI.Utils
         public static string? GetUserRole(ClaimsPrincipal user)
         {
             return user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
-        }
-
-        /// <summary>
-        /// L?y User Name t? claims
-        /// </summary>
-        public static string? GetUserName(ClaimsPrincipal user)
-        {
-            return user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
         }
 
         /// <summary>
@@ -73,13 +65,11 @@ namespace TheVehicleEcosystemAPI.Utils
         /// </summary>
         public static bool CanAccessUserResource(ClaimsPrincipal user, int targetUserId)
         {
-            // ADMIN có th? truy c?p resource c?a b?t k? user nào
             if (IsAdmin(user))
             {
                 return true;
             }
 
-            // User ch? có th? truy c?p resource c?a chính mình
             var currentUserId = GetUserId(user);
             return currentUserId.HasValue && currentUserId.Value == targetUserId;
         }
@@ -91,10 +81,9 @@ namespace TheVehicleEcosystemAPI.Utils
         {
             return new Dictionary<string, string?>
             {
-                ["UserId"] = GetUserId(user)?.ToString(),
+                ["Id"] = GetUserId(user)?.ToString(),
                 ["Email"] = GetUserEmail(user),
-                ["Role"] = GetUserRole(user),
-                ["Name"] = GetUserName(user)
+                ["Role"] = GetUserRole(user)
             };
         }
     }

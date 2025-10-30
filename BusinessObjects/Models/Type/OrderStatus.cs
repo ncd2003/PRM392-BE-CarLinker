@@ -8,11 +8,12 @@ namespace BusinessObjects.Models
 {
     public enum OrderStatus
     {
-        Pending = 0,      
-        Confirmed = 1,    // Đã xác nhận
-        Shipping = 2,      // Đang giao
-        Delivered = 3,    // Đã giao
-        Cancelled = 4,    // Đã hủy
-        Failed = 5        // Giao thất bại
+        PENDING = 0,      
+        CONFIRMED = 1, 
+        PACKED = 2,        // Đã xác nhận //dealer
+        SHIPPING = 3,      // Đang giao
+        DELIVERED = 4,    // Đã giao
+        CANCELLED = 5,    // Đã hủy
+        FAILED = 6        // Giao thất bại
     }
 }

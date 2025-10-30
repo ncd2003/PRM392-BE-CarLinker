@@ -2,7 +2,6 @@
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace TheVehicleEcosystemAPI.Security
@@ -10,36 +9,29 @@ namespace TheVehicleEcosystemAPI.Security
     public class JWTConfiguration
     {
         private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _contextAccessor;
 
-        public JWTConfiguration(IConfiguration configuration)
+        public JWTConfiguration(IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
             _configuration = configuration;
+            _contextAccessor = httpContextAccessor;
         }
 
         /// <summary>
-        /// Generate JWT Access Token with user roles
+        /// Generate JWT Access Token - Chỉ chứa id, email và role
         /// </summary>
         public string GenerateJwtToken(User user)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-            // Create claims including role
+            // ✨ Chỉ lưu id, email và role trong claims
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.FullName),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.UserRole.ToString()), // Add role claim
-                new Claim("userId", user.Id.ToString()),
-                new Claim("userStatus", user.UserStatus.ToString())
+                new Claim(ClaimTypes.Role, user.UserRole.ToString())
             };
-
-            // Add phone number if available
-            if (!string.IsNullOrEmpty(user.PhoneNumber))
-            {
-                claims.Add(new Claim(ClaimTypes.MobilePhone, user.PhoneNumber));
-            }
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
@@ -60,14 +52,12 @@ namespace TheVehicleEcosystemAPI.Security
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:RefreshTokenKey"]!));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-            // Thời gian hết hạn của refresh token (mặc định 7 ngày)
             expiryTime = DateTime.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenExpiresInDays"] ?? "7"));
 
-            // Tạo claims cho refresh token bao gồm expire time
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim("exp_time", expiryTime.ToString("O")), // Lưu expire time trong token
+                new Claim("exp_time", expiryTime.ToString("O")),
                 new Claim("token_type", "refresh")
             };
 
@@ -138,7 +128,6 @@ namespace TheVehicleEcosystemAPI.Security
 
                 var principal = tokenHandler.ValidateToken(refreshToken, validationParameters, out SecurityToken validatedToken);
 
-                // Lấy expire time từ trong claims của token
                 var expTimeClaim = principal.Claims.FirstOrDefault(c => c.Type == "exp_time");
                 DateTime? expiryTime = null;
 
@@ -173,12 +162,12 @@ namespace TheVehicleEcosystemAPI.Security
                     ValidIssuer = _configuration["Jwt:Issuer"],
                     ValidateAudience = true,
                     ValidAudience = _configuration["Jwt:Audience"],
-                    ValidateLifetime = false, // Không validate lifetime để có thể đọc expired token
+                    ValidateLifetime = false,
                     ClockSkew = TimeSpan.Zero
                 };
 
                 var principal = tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
-                var userIdClaim = principal.Claims.FirstOrDefault(c => c.Type == "userId" || c.Type == ClaimTypes.NameIdentifier);
+                var userIdClaim = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
 
                 if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
                 {
@@ -191,6 +180,120 @@ namespace TheVehicleEcosystemAPI.Security
             {
                 return null;
             }
+        }
+
+        // ============================================================
+        // ✨ HELPER METHODS - Lấy thông tin user từ HttpContext
+        // ============================================================
+
+        /// <summary>
+        /// Lấy ClaimsPrincipal của user hiện tại
+        /// </summary>
+        public ClaimsPrincipal? CurrentUser => _contextAccessor.HttpContext?.User;
+
+        /// <summary>
+        /// Lấy User ID từ token hiện tại
+        /// </summary>
+        /// <returns>User ID hoặc null nếu không tìm thấy</returns>
+        public int? GetCurrentUserId()
+        {
+            var user = CurrentUser;
+            if (user?.Identity?.IsAuthenticated != true)
+                return null;
+
+            var userIdClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return userId;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Lấy Email từ token hiện tại
+        /// </summary>
+        /// <returns>Email hoặc null nếu không tìm thấy</returns>
+        public string? GetCurrentUserEmail()
+        {
+            var user = CurrentUser;
+            if (user?.Identity?.IsAuthenticated != true)
+                return null;
+
+            return user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+        }
+
+        /// <summary>
+        /// Lấy Role từ token hiện tại
+        /// </summary>
+        /// <returns>Role (ADMIN, CUSTOMER, GARAGE) hoặc null nếu không tìm thấy</returns>
+        public string? GetCurrentUserRole()
+        {
+            var user = CurrentUser;
+            if (user?.Identity?.IsAuthenticated != true)
+                return null;
+
+            return user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+        }
+
+        /// <summary>
+        /// Kiểm tra user hiện tại có role ADMIN không
+        /// </summary>
+        public bool IsAdmin()
+        {
+            return GetCurrentUserRole() == "ADMIN";
+        }
+
+        /// <summary>
+        /// Kiểm tra user hiện tại có role CUSTOMER không
+        /// </summary>
+        public bool IsCustomer()
+        {
+            return GetCurrentUserRole() == "CUSTOMER";
+        }
+
+        /// <summary>
+        /// Kiểm tra user hiện tại có role GARAGE không
+        /// </summary>
+        public bool IsGarage()
+        {
+            return GetCurrentUserRole() == "GARAGE";
+        }
+
+        /// <summary>
+        /// Kiểm tra user hiện tại có quyền truy cập resource của user khác không
+        /// </summary>
+        /// <param name="targetUserId">ID của user cần truy cập</param>
+        /// <returns>True nếu có quyền (ADMIN hoặc chính user đó)</returns>
+        public bool CanAccessUserResource(int targetUserId)
+        {
+            if (IsAdmin())
+                return true;
+
+            var currentUserId = GetCurrentUserId();
+            return currentUserId.HasValue && currentUserId.Value == targetUserId;
+        }
+
+        /// <summary>
+        /// Lấy tất cả thông tin user từ token hiện tại
+        /// </summary>
+        /// <returns>Dictionary chứa id, email, role</returns>
+        public Dictionary<string, string?> GetCurrentUserInfo()
+        {
+            return new Dictionary<string, string?>
+            {
+                ["Id"] = GetCurrentUserId()?.ToString(),
+                ["Email"] = GetCurrentUserEmail(),
+                ["Role"] = GetCurrentUserRole()
+            };
+        }
+
+        /// <summary>
+        /// Kiểm tra user đã authenticated chưa
+        /// </summary>
+        public bool IsAuthenticated()
+        {
+            return CurrentUser?.Identity?.IsAuthenticated == true;
         }
     }
 }

@@ -8,6 +8,6 @@ namespace BusinessObjects.Models.Type
 {
     public enum Role
     {
-        ADMIN, CUSTOMER, GARAGE
+        CUSTOMER, GARAGE, DEALER, WAREHOUSE
     }
 }

@@ -1,5 +1,6 @@
 ﻿using BusinessObjects.Models;
 using BusinessObjects.Models.DTOs.Cart;
+using DataAccess;
 using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -22,6 +23,33 @@ namespace TheVehicleEcosystemAPI.Controllers
         {
             _cartRepository = cartRepository;
             _logger = logger;
+        }
+
+        //Get list cart items
+        [HttpGet("get-list-cart-items")]
+        public async Task<IActionResult> GetListCartItems()
+        {
+            try
+            {
+                int UserId = 16;
+                var cartId = await _cartRepository.GetCartIdByUserId(UserId);
+                var listCartItem = await _cartRepository.GetListCartItemByCartId(cartId);
+
+                // Map sang DTO
+                var listCartItemDto = listCartItem.Adapt<List<CartItemDto>>();
+                return Ok(ApiResponse<object>.Success("lấy sản phẩm trong giỏ hàng thành công", listCartItemDto));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<string>.BadRequest(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy sản phẩm trong giỏ hàng");
+                return StatusCode(500, ApiResponse<string>.InternalError(
+                    "Đã xảy ra lỗi khi lấy sản phẩm trong giỏ hàng."
+                ));
+            }
         }
 
         //Add product to cart

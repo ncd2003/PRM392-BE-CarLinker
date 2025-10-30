@@ -17,7 +17,9 @@ namespace Repositories
             bool isAsc = true);
         Task<Vehicle?> GetByIdAsync(int id);
         Task AddAsync(Vehicle vehicle);
-        Task UpdateAsync(Vehicle vehicle);
+        Task UpdateAsync(int id,Vehicle vehicle);
         Task DeleteAsync(int id);
+
+        Task<bool> IsExistLicensePlate(string licensePlate);
     }
 }

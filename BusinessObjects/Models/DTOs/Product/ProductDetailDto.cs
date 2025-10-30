@@ -14,6 +14,8 @@ namespace BusinessObjects.Models.DTOs.Product
         public string? Image { get; set; } // Ảnh đại diện chính
         public int WarrantyPeriod { get; set; }
 
+        public decimal Price { get; set; }
+
         // Dữ liệu đã được "làm phẳng"
         public string CategoryName { get; set; }
         public string ManufacturerName { get; set; }

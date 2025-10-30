@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BusinessObjects.Models.DTOs.Product;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,10 +9,12 @@ namespace BusinessObjects.Models.DTOs.Order
 {
     public class OrderItemDto
     {
-        public int ProductVariantId { get; set; }
+        public virtual ProductVariantDto ProductVariant { get; set; }
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal Subtotal { get; set; }
+
+        
 
     }
 }

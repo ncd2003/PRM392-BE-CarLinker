@@ -6,13 +6,18 @@ using System.Threading.Tasks;
 
 namespace BusinessObjects.Models.DTOs.Product
 {
-    public class ListProductVariantDto
+    public class ListProductDto
     {
+        public int Id { get; set; }
         public string Name { get; set; }
 
         public decimal Price { get; set; }
 
         public string Image { get; set; }
-        public bool IsDefault { get; set; }
+
+        public int CategoryId { get; set; }
+
+        public int BrandId { get; set; }
+        public bool IsDefault { get; set; } = true;
     }
 }

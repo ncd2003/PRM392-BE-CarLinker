@@ -1,5 +1,5 @@
 ﻿using BusinessObjects.Models;
-using BusinessObjects.Models.DTOs;
+using BusinessObjects.Models.DTOs.Product;
 using DataAccess;
 using System;
 using System.Collections.Generic;
@@ -26,6 +26,16 @@ namespace Repositories
         public async Task<List<Product>> GetProductsAsync(ProductFilterParams filterParams)
         {
             return await _productDao.GetProductsAsync(filterParams);
+        }
+
+        public async Task<List<ProductVariant>> GetProductVariantDefault()
+        {
+            return await _productDao.GetProductVariantDefault();
+        }
+
+        public async Task<List<Product>> SearchProductsAsync(string searchTerm)
+        {
+            return await _productDao.SearchProductsAsync(searchTerm);
         }
     }
 }

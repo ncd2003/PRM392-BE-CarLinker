@@ -21,8 +21,9 @@ namespace BusinessObjects.Models.DTOs.Product
         public decimal Price { get; set; }
 
         // Số lượng tồn kho có sẵn để bán
-        public int Stock { get; set; }
+        public int StockQuantity { get; set; }
 
+        public int HoldQuantity { get; set; } 
         // Cho frontend biết nên chọn sẵn biến thể này khi tải trang hay không
         public bool IsDefault { get; set; }
 

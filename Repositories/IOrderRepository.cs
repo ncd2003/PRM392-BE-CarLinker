@@ -18,8 +18,14 @@ namespace Repositories
 
         Task<List<Order>> GetAllOrders();
 
-        Task<bool> UpdateOrderStatus(int orderId, OrderStatus newStatus);
+        Task UpdateOrderStatus(int orderId, OrderStatus newStatus);
 
         Task<bool> CancelOrderAsync(int orderId, int? userId);
+
+        Task<int> GetTotalOrderCountAsync();
+
+        Task<int> GetPendingOrderCountAsync();
+
+        Task<decimal> GetTotalRevenueAsync();
     }
 }

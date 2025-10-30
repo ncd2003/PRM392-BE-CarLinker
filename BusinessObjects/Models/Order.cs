@@ -17,13 +17,17 @@ namespace BusinessObjects.Models
         [ForeignKey("User")]
         public int? UserId { get; set; }
 
+        public string FullName { get; set; }
+
+        public string Enail { get; set; }
+
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalAmount { get; set; }
 
         // --- THAY ĐỔI Ở ĐÂY ---
         [Required]
-        public OrderStatus Status { get; set; } = OrderStatus.Pending; // Gán giá trị mặc định
+        public OrderStatus Status { get; set; } // Gán giá trị mặc định
         // --- KẾT THÚC THAY ĐỔI ---
 
         [StringLength(255)]

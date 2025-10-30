@@ -78,10 +78,10 @@ namespace TheVehicleEcosystemAPI.Controllers
             try
             {
                 // Kiểm tra quyền truy cập
-                if (!UserContextHelper.CanAccessUserResource(User, id))
-                {
-                    return StatusCode(403, ApiResponse<object>.BadRequest("Bạn không có quyền xem thông tin user này"));
-                }
+                //if (!UserContextHelper.CanAccessUserResource(User, id))
+                //{
+                //    return StatusCode(403, ApiResponse<object>.BadRequest("Bạn không có quyền xem thông tin user này"));
+                //}
 
                 var user = await _userRepository.GetByIdAsync(id);
                 if (user == null)
@@ -125,10 +125,10 @@ namespace TheVehicleEcosystemAPI.Controllers
                 }
 
                 // Kiểm tra quyền truy cập
-                if (!UserContextHelper.CanAccessUserResource(User, id))
-                {
-                    return StatusCode(403, ApiResponse<object>.BadRequest("Bạn không có quyền cập nhật thông tin user này"));
-                }
+                //if (!UserContextHelper.CanAccessUserResource(User, id))
+                //{
+                //    return StatusCode(403, ApiResponse<object>.BadRequest("Bạn không có quyền cập nhật thông tin user này"));
+                //}
 
                 await _userRepository.UpdateAsync(user.Adapt<User>());
                 return Ok(ApiResponse<object>.Success("Cập nhật user thành công"));

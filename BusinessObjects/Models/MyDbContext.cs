@@ -1,24 +1,19 @@
 ﻿using BusinessObjects.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Linq;
-using System;
-
+using System.Security.Claims;
 namespace BusinessObjects
 {
     public class MyDbContext : DbContext
     {
-        private readonly Func<string?>? _getCurrentUser;
-
+        private readonly IHttpContextAccessor? _httpContextAccessor;
         public MyDbContext() { }
 
-        public MyDbContext(DbContextOptions<MyDbContext> options, Func<string?>? getCurrentUser = null)
+        public MyDbContext(DbContextOptions<MyDbContext> options, IHttpContextAccessor? httpContextAccessor = null)
             : base(options)
         {
-            _getCurrentUser = getCurrentUser;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         // --- 1. DbSet chính ---
@@ -30,6 +25,8 @@ namespace BusinessObjects
         public DbSet<OptionValue> OptionValue { get; set; }
         public DbSet<ProductVariant> ProductVariant { get; set; }
         public DbSet<ProductVariantOption> ProductVariantOption { get; set; }
+        public DbSet<Service> Service { get; set; }
+        public DbSet<Garage> Garage { get; set; }
 
         // --- 2. Các bảng người dùng và giao dịch ---
         public DbSet<User> User { get; set; }
@@ -129,6 +126,16 @@ namespace BusinessObjects
             // USER
             modelBuilder.Entity<User>()
                 .Property(u => u.FullName)
+                .UseCollation("Vietnamese_CI_AS");
+
+            //Service
+            modelBuilder.Entity<Service>()
+                .Property(v => v.Name)
+                .UseCollation("Vietnamese_CI_AS");
+
+            //Garage
+            modelBuilder.Entity<Garage>()
+                .Property (g => g.Name)
                 .UseCollation("Vietnamese_CI_AS");
 
             // VEHICLE
@@ -369,7 +376,6 @@ namespace BusinessObjects
                 .Where(e => e.Entity is BaseModel && (e.State == EntityState.Added || e.State == EntityState.Modified));
 
             var now = DateTimeOffset.UtcNow;
-            var user = GetCurrentUsername() ?? "System";
 
             foreach (var entry in entries)
             {
@@ -377,25 +383,36 @@ namespace BusinessObjects
                 if (entry.State == EntityState.Added)
                 {
                     entity.CreatedAt = now;
-                    entity.CreatedBy = user;
                 }
 
                 entity.UpdatedAt = now;
-                entity.UpdatedBy = user;
             }
         }
 
-        private string? GetCurrentUsername()
-        {
-            try
-            {
-                if (_getCurrentUser != null) return _getCurrentUser();
-                return null;
-            }
-            catch
-            {
-                return null;
-            }
-        }
+        //private string? GetCurrentUsername()
+        //{
+        //    try
+        //    {
+        //        // Lấy ClaimsPrincipal từ HttpContext
+        //        var user = _httpContextAccessor?.HttpContext?.User;
+                
+        //        if (user?.Identity?.IsAuthenticated == true)
+        //        {
+        //            // Lấy thông tin từ claims theo thứ tự ưu tiên
+        //            var email = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+        //            var name = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+        //            var userId = user.Claims.FirstOrDefault(c => c.Type == "userId" || c.Type == ClaimTypes.NameIdentifier)?.Value;
+                    
+        //            // Trả về theo thứ tự ưu tiên: email > name > userId
+        //            return email ?? name ?? (userId != null ? $"User_{userId}" : null);
+        //        }
+                
+        //        return null;
+        //    }
+        //    catch
+        //    {
+        //        return null;
+        //    }
+        //}
     }
 }

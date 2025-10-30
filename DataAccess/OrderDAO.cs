@@ -82,8 +82,10 @@ namespace DataAccess
                 var newOrder = new Order
                 {
                     UserId = userId,
+                    FullName = orderDto.FullName,
+                    Enail = orderDto.Email,
                     TotalAmount = totalAmount,
-                    Status = OrderStatus.Pending, // Dùng enum
+                    Status = OrderStatus.PENDING, // Dùng enum
                     PaymentMethod = orderDto.PaymentMethod,
                     ShippingAddress = orderDto.ShippingAddress,
                     PhoneNumber = orderDto.PhoneNumber,
@@ -138,6 +140,8 @@ namespace DataAccess
         public async Task<List<Order>> GetOrdersByUserId(int userId)
         {
             return await _context.Order
+                .Include(o => o.OrderItems)
+                .ThenInclude(O => O.ProductVariant)
                 .Where(o => o.UserId == userId)
                 .OrderByDescending(o => o.OrderDate) // Sắp xếp mới nhất lên trên
                 .AsNoTracking()
@@ -150,6 +154,7 @@ namespace DataAccess
         public async Task<Order?> GetOrderDetail(int orderId)
         {
             return await _context.Order
+                .Include(o => o.User)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.ProductVariant)
                 .AsNoTracking()
@@ -171,20 +176,53 @@ namespace DataAccess
         /// <summary>
         /// Cập nhật trạng thái của một đơn hàng (dùng cho Admin).
         /// </summary>
-        public async Task<bool> UpdateOrderStatus(int orderId, OrderStatus newStatus)
+        public async Task UpdateOrderStatus(int orderId, OrderStatus newStatus)
         {
-            var order = await _context.Order.FindAsync(orderId);
+            var order = await _context.Order.FirstOrDefaultAsync(o => o.Id == orderId);
             if (order == null)
             {
                 throw new Exception("Không tìm thấy đơn hàng.");
             }
 
-            // TODO: Bạn có thể thêm logic kiểm tra newStatus có hợp lệ không
-            // (Vd: không thể chuyển từ "Delivered" về "Pending")
+            // Kiểm tra luồng trạng thái hợp lệ
+            ValidateStatusTransition(order.Status, newStatus);
 
             order.Status = newStatus;
-            _context.Order.Update(order);
-            return await _context.SaveChangesAsync() > 0;
+            await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Kiểm tra tính hợp lệ của việc chuyển đổi trạng thái đơn hàng.
+        /// </summary>
+        private void ValidateStatusTransition(OrderStatus currentStatus, OrderStatus newStatus)
+        {
+            // Nếu trạng thái không thay đổi thì bỏ qua
+            if (currentStatus == newStatus)
+            {
+                return;
+            }
+
+            var validTransitions = new Dictionary<OrderStatus, List<OrderStatus>>
+    {
+        { OrderStatus.PENDING, new List<OrderStatus> { OrderStatus.CONFIRMED } },
+        { OrderStatus.CONFIRMED, new List<OrderStatus> { OrderStatus.PACKED, OrderStatus.PENDING } },
+        { OrderStatus.PACKED, new List<OrderStatus> { OrderStatus.SHIPPING, OrderStatus.CONFIRMED } },
+        { OrderStatus.SHIPPING, new List<OrderStatus> { OrderStatus.DELIVERED, OrderStatus.FAILED, OrderStatus.PACKED } }
+    };
+
+            // Kiểm tra xem có được phép chuyển đổi không
+            if (!validTransitions.ContainsKey(currentStatus))
+            {
+                throw new InvalidOperationException($"Không thể thay đổi trạng thái từ {currentStatus}.");
+            }
+
+            if (!validTransitions[currentStatus].Contains(newStatus))
+            {
+                throw new InvalidOperationException(
+                    $"Không thể chuyển trạng thái từ {currentStatus} sang {newStatus}. " +
+                    $"Các trạng thái hợp lệ: {string.Join(", ", validTransitions[currentStatus])}."
+                );
+            }
         }
 
         // --- THÊM VÀO ORDERDAO ---
@@ -213,7 +251,7 @@ namespace DataAccess
                 }
 
                 // SỬA: So sánh với enum
-                if (order.Status != OrderStatus.Pending)
+                if (order.Status != OrderStatus.PENDING)
                 {
                     throw new Exception($"Không thể hủy đơn hàng. Đơn hàng đang ở trạng thái '{order.Status}'.");
                 }
@@ -239,7 +277,7 @@ namespace DataAccess
                 _context.ProductVariant.UpdateRange(variantsToUpdate);
 
                 // 2. CẬP NHẬT TRẠNG THÁI ORDER
-                order.Status = OrderStatus.Cancelled; // <-- SỬA: Gán bằng enum
+                order.Status = OrderStatus.CANCELLED; // <-- SỬA: Gán bằng enum
                 _context.Order.Update(order);
 
                 // 3. LƯU VÀ COMMIT
@@ -252,6 +290,61 @@ namespace DataAccess
             {
                 await transaction.RollbackAsync();
                 _logger.LogError(ex, "Lỗi khi hủy đơn hàng {OrderId}", orderId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Đếm tổng số đơn hàng (cho Admin Dashboard).
+        /// </summary>
+        public async Task<int> GetTotalOrderCountAsync()
+        {
+            try
+            {
+                return await _context.Order.CountAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi đếm tổng số đơn hàng.");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Đếm số đơn hàng đang chờ xử lý (PENDING).
+        /// </summary>
+        public async Task<int> GetPendingOrderCountAsync()
+        {
+            try
+            {
+                // Đảm bảo rằng OrderStatus là một enum đã được định nghĩa
+                return await _context.Order
+                    .Where(o => o.Status == OrderStatus.PENDING)
+                    .CountAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi đếm số đơn hàng PENDING.");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Tính tổng doanh thu từ các đơn hàng ĐÃ HOÀN THÀNH (DELIVERED).
+        /// Chỉ tính các đơn đã giao thành công, không tính Pending hoặc Cancelled.
+        /// </summary>
+        public async Task<decimal> GetTotalRevenueAsync()
+        {
+            try
+            {
+                // Giả định rằng 'DELIVERED' là trạng thái cuối cùng cho biết doanh thu
+                return await _context.Order
+                    .Where(o => o.Status == OrderStatus.DELIVERED)
+                    .SumAsync(o => o.TotalAmount);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tính tổng doanh thu.");
                 throw;
             }
         }

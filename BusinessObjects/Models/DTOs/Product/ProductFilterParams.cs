@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BusinessObjects.Models.DTOs
+namespace BusinessObjects.Models.DTOs.Product
 {
     // Lớp này dùng để nhận tham số lọc và phân trang từ API
     public class ProductFilterParams

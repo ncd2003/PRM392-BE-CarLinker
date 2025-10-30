@@ -44,9 +44,24 @@ namespace Repositories
             return await _orderDAO.GetOrdersByUserId(userId);
         }
 
-        public async Task<bool> UpdateOrderStatus(int orderId, OrderStatus newStatus)
+        public async Task UpdateOrderStatus(int orderId, OrderStatus newStatus)
         {
-            return await _orderDAO.UpdateOrderStatus(orderId, newStatus);
+            await _orderDAO.UpdateOrderStatus(orderId, newStatus);
+        }
+
+        public async Task<int> GetTotalOrderCountAsync()
+        {
+            return await _orderDAO.GetTotalOrderCountAsync();
+        }
+
+        public async Task<int> GetPendingOrderCountAsync()
+        {
+            return await _orderDAO.GetPendingOrderCountAsync();
+        }
+
+        public async Task<decimal> GetTotalRevenueAsync()
+        {
+            return await _orderDAO.GetTotalRevenueAsync();
         }
     }
 }

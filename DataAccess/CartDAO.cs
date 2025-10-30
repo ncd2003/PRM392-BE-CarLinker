@@ -30,6 +30,7 @@ namespace DataAccess
         public async Task<IEnumerable<CartItem>> GetListCartItemByCartId(int cartId)
         {
             return await _context.CartItem
+                .Include(a => a.ProductVariant)
                 .Where(c => c.CartId == cartId)
                 .ToListAsync();
         }

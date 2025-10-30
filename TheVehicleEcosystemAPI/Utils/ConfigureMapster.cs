@@ -25,6 +25,8 @@ namespace TheVehicleEcosystemAPI.Utils
             TypeAdapterConfig<ProductOption, ProductOptionDto>.NewConfig().TwoWays();
 
             TypeAdapterConfig<OptionValue, OptionValueDto>.NewConfig().TwoWays();
+
+            TypeAdapterConfig<ProductVariant, ProductVariantDto>.NewConfig().TwoWays();
         }
     }
 }

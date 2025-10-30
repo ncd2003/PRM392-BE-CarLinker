@@ -9,7 +9,7 @@ using System.Security.Claims;
 using System.Text;
 using TheVehicleEcosystemAPI.Utils;
 using TheVehicleEcosystemAPI.Security;
-using TheVehicleEcosystemAPI.Middleware;
+using VNPAY.NET;
 
 namespace TheVehicleEcosystemAPI
 {
@@ -22,30 +22,65 @@ namespace TheVehicleEcosystemAPI
             // Add services to the container.
             builder.Services.AddControllers();
 
-            // Register DbContext
-            builder.Services.AddDbContext<MyDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("MyCnn"))
-            );
+            // ✨ Register IHttpContextAccessor for accessing HttpContext in DbContext
+            builder.Services.AddHttpContextAccessor();
+
+            // Register DbContext with IHttpContextAccessor
+            builder.Services.AddDbContext<MyDbContext>((serviceProvider, options) =>
+            {
+                var httpContextAccessor = serviceProvider.GetService<IHttpContextAccessor>();
+                var connectionString = builder.Configuration.GetConnectionString("MyCnn");
+
+                options.UseSqlServer(connectionString);
+            });
 
             // Register DAOs
             builder.Services.AddScoped<VehicleDAO>();
             builder.Services.AddScoped<UserDAO>();
+            builder.Services.AddScoped<ServiceDAO>();
             builder.Services.AddScoped<CartDAO>();
             builder.Services.AddScoped<OrderDAO>();
             builder.Services.AddScoped<ProductDAO>();
+            builder.Services.AddScoped<CategoryDAO>();
+            builder.Services.AddScoped<BrandDAO>();
 
             // Register Repositories
             builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
             builder.Services.AddScoped<ICartRepository, CartRepository>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
+            builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+            builder.Services.AddScoped<IBrandRepository, BrandRepository>();
+
+            // Register Cloudflare R2 Storage
+            builder.Services.AddSingleton<CloudflareR2Storage>();
 
             // Register JWT Configuration
             builder.Services.AddScoped<JWTConfiguration>();
-            
+
             // Mapster
             ConfigureMapster.ConfigureMappings();
+
+            //Vnpay
+            builder.Services.AddSingleton<IVnpay>(sp =>
+            {
+                // Lấy IConfiguration từ Service Provider
+                var config = sp.GetRequiredService<IConfiguration>();
+
+                // Đọc các giá trị từ appsettings.json
+                string tmnCode = config["Vnpay:TmnCode"];
+                string hashSecret = config["Vnpay:HashSecret"];
+                string baseUrl = config["Vnpay:BaseUrl"];
+                string returnUrl = config["Vnpay:ReturnUrl"];
+
+                // Tạo và khởi tạo đối tượng Vnpay
+                var vnpay = new Vnpay();
+                vnpay.Initialize(tmnCode, hashSecret, baseUrl, returnUrl);
+
+                return vnpay; // Trả về đối tượng đã được khởi tạo
+            });
 
             // 1. Thêm dịch vụ Authentication
             builder.Services.AddAuthentication(options =>
@@ -76,15 +111,16 @@ namespace TheVehicleEcosystemAPI
                 options.AddPolicy("AllowAll",
                     policy =>
                     {
-                        policy.AllowAnyOrigin()
+                        policy.WithOrigins("http://localhost:5173")
                               .AllowAnyMethod()
-                              .AllowAnyHeader();
+                              .AllowAnyHeader()
+                              .AllowCredentials();
                     });
             });
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
-            
+
             // Configure Swagger with JWT Bearer authentication
             builder.Services.AddSwaggerGen(options =>
             {
@@ -109,7 +145,6 @@ namespace TheVehicleEcosystemAPI
                     BearerFormat = "JWT",
                     In = ParameterLocation.Header,
                     Description = @"JWT Authorization header using the Bearer scheme.
-                    
 Enter your token in the text input below.
 Example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
 
@@ -154,9 +189,6 @@ Example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
             // 4. Sử dụng Middleware (thứ tự quan trọng!)
             app.UseAuthentication(); // Phải đặt trước UseAuthorization
             app.UseAuthorization();
-            
-            // 5. Sử dụng custom middleware để validate role
-            app.UseRoleValidation();
 
             app.MapControllers();
 

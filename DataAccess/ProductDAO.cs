@@ -1,6 +1,6 @@
 ﻿using BusinessObjects;
 using BusinessObjects.Models;
-using BusinessObjects.Models.DTOs; // Giả định bạn có DTOs cho việc lọc và tạo/cập nhật
+using BusinessObjects.Models.DTOs.Product;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -32,7 +32,7 @@ namespace DataAccess
             // (Giả định ProductFilterParams chứa: CategoryId, BrandId, SortBy, Page, PageSize...)
 
             var query = _context.Product
-                .Include(p => p.ProductVariants.Where(v => v.IsDefault && v.IsActive))
+                //.Include(p => p.ProductVariants.Where(v => v.IsDefault && v.IsActive))
                 .Where(p => p.IsActive);
 
             // --- Lọc (Filtering) ---
@@ -166,6 +166,11 @@ namespace DataAccess
             _context.ProductVariant.UpdateRange(variants);
 
             return await _context.SaveChangesAsync() > 0;
+        }
+
+        public async Task<List<ProductVariant>> GetProductVariantDefault()
+        {
+            return await _context.ProductVariant.Where(p => p.IsDefault == true && p.IsActive == true).ToListAsync();
         }
     }
 }

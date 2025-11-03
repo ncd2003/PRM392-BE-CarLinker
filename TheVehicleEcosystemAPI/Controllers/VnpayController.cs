@@ -26,11 +26,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         {
             try
             {
-                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                if (string.IsNullOrEmpty(ipAddress) || ipAddress == "::1")
-                {
-                    ipAddress = "127.0.0.1";
-                }
+                var ipAddress = GetClientIpAddress();
 
                 var request = new PaymentRequest { 
                     PaymentId = orderId,
@@ -52,35 +48,6 @@ namespace TheVehicleEcosystemAPI.Controllers
             }
         }
 
-        [HttpGet("IpnAction")]
-        public async Task<IActionResult> IpnAction()
-        {
-            if (Request.QueryString.HasValue)
-            {
-                try
-                {
-                    var paymentResult = _vnpay.GetPaymentResult(Request.Query);
-                    int paymentId = (int)paymentResult.PaymentId;
-
-                    if (paymentResult.IsSuccess)
-                    {
-                        // TODO: Xử lý nghiệp vụ (cập nhật đơn hàng,...)
-                        await _orderRepository.UpdateOrderStatus(paymentId, OrderStatus.CONFIRMED);
-                        return Ok(new { RspCode = "00", Message = "Confirm Success" });
-                    }
-
-                    // Thanh toán thất bại
-                    await _orderRepository.UpdateOrderStatus(paymentId, OrderStatus.FAILED);
-                    return Ok(new { RspCode = "00", Message = "Confirm Success" });
-                }
-                catch (Exception ex)
-                {
-                    return Ok(new { RspCode = "99", Message = $"Unknown error: {ex.Message}" });
-                }
-            }
-            return Ok(new { RspCode = "97", Message = "Invalid Checksum" });
-        }
-
         [HttpGet("Callback")]
         public async Task<ActionResult<string>> Callback()
         {
@@ -95,12 +62,12 @@ namespace TheVehicleEcosystemAPI.Controllers
                     if (paymentResult.IsSuccess)
                     {
                         await _orderRepository.UpdateOrderStatus(paymentId, OrderStatus.CONFIRMED);
-                        return Redirect($"http://localhost:5173/order-success?orderId={paymentId}");
+                        return Redirect($"carlinker://payment-success?orderId={paymentId}");
 
                     }
                     // Thanh toán thất bại
                     await _orderRepository.UpdateOrderStatus(paymentId, OrderStatus.FAILED);
-                    return Redirect($"http://localhost:5173/order-failed?orderId={paymentId}");
+                    return Redirect($"carlinker://payment-failed?orderId={paymentId}");
                 }
                 catch (Exception ex)
                 {
@@ -109,6 +76,32 @@ namespace TheVehicleEcosystemAPI.Controllers
                 }
             }
             return NotFound("Không tìm thấy thông tin thanh toán.");
+        }
+
+        private string GetClientIpAddress()
+        {
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            // Nếu không có IP hoặc là localhost
+            if (string.IsNullOrEmpty(ipAddress) || ipAddress == "::1")
+            {
+                // Thử lấy từ header X-Forwarded-For (qua proxy)
+                ipAddress = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+
+                // Nếu không có, thử X-Real-IP
+                if (string.IsNullOrEmpty(ipAddress))
+                    ipAddress = HttpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
+
+                // Nếu vẫn không có, dùng mặc định
+                if (string.IsNullOrEmpty(ipAddress))
+                    ipAddress = "127.0.0.1";
+            }
+
+            // Nếu X-Forwarded-For có nhiều IP (qua nhiều proxy), lấy cái đầu tiên
+            if (ipAddress.Contains(","))
+                ipAddress = ipAddress.Split(",")[0].Trim();
+
+            return ipAddress;
         }
     }
 }

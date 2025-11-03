@@ -191,6 +191,33 @@ namespace DataAccess
             await _context.SaveChangesAsync();
         }
 
+        public async Task<bool> UpdateOrderStatusWithTransaction(int orderId, OrderStatus newStatus)
+        {
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var order = await _context.Order.FirstOrDefaultAsync(o => o.Id == orderId);
+                    if (order == null)
+                    {
+                        throw new Exception("Order không tồn tại");
+                    }
+
+                    ValidateStatusTransition(order.Status, newStatus);
+                    order.Status = newStatus;
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+        }
+
         /// <summary>
         /// Kiểm tra tính hợp lệ của việc chuyển đổi trạng thái đơn hàng.
         /// </summary>

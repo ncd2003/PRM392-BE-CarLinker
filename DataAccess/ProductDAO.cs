@@ -78,7 +78,7 @@ namespace DataAccess
                     .ThenInclude(po => po.OptionValues)
 
                 // 3. Tải Variants đang hoạt động
-                .Include(p => p.ProductVariants.Where(v => v.IsActive)) 
+                .Include(p => p.ProductVariants.Where(v => v.IsActive))
                     .ThenInclude(pv => pv.ProductVariantOptions)
                         .ThenInclude(pvo => pvo.OptionValue)
 
@@ -110,25 +110,86 @@ namespace DataAccess
             await _context.SaveChangesAsync();
             return product;
         }
-
         /// <summary>
-        /// [Admin] Cập nhật thông tin cơ bản của sản phẩm (tên, mô tả...).
+        /// [Admin] Cập nhật thông tin cơ bản của sản phẩm (tên, mô tả, ảnh, trạng thái...).
         /// </summary>
-        public async Task<bool> UpdateProductAsync(Product productToUpdate)
+        public async Task<Product?> UpdateProductAsync(Product productToUpdate)
         {
-            // Chỉ cập nhật các trường cơ bản, không cập nhật list (variants, options)
-            _context.Entry(productToUpdate).State = EntityState.Modified;
-            _context.Entry(productToUpdate).Property(p => p.Id).IsModified = false;
-            // ... (có thể cần detach các navigation properties)
-
             try
             {
-                return await _context.SaveChangesAsync() > 0;
+                // 1. Tải sản phẩm gốc (existingProduct) từ Database
+                var existingProduct = await _context.Product
+                    .FirstOrDefaultAsync(p => p.Id == productToUpdate.Id);
+
+                if (existingProduct == null)
+                {
+                    _logger.LogWarning("Không tìm thấy Product {ProductId} để cập nhật", productToUpdate.Id);
+                    return null; // Sửa: Trả về null nếu không tìm thấy
+                }
+
+                // 2. Cập nhật thủ công TỪNG TRƯỜNG CƠ BẢN VÀ FOREIGN KEY
+                existingProduct.CategoryId = productToUpdate.CategoryId;
+                existingProduct.ManufacturerId = productToUpdate.ManufacturerId;
+                existingProduct.BrandId = productToUpdate.BrandId;
+                existingProduct.Name = productToUpdate.Name;
+                existingProduct.Description = productToUpdate.Description;
+                existingProduct.Image = productToUpdate.Image;
+                existingProduct.WarrantyPeriod = productToUpdate.WarrantyPeriod;
+                existingProduct.IsActive = productToUpdate.IsActive;
+                existingProduct.IsFeatured = productToUpdate.IsFeatured;
+
+                // Cập nhật thời gian
+                if (existingProduct is BaseModel baseModel)
+                {
+                    baseModel.UpdatedAt = DateTime.UtcNow;
+                }
+
+                // 3. SaveChangesAsync
+                await _context.SaveChangesAsync();
+
+                // 4. Sửa: Trả về đối tượng đã được cập nhật
+                return existingProduct;
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                _logger.LogError(ex, "Lỗi concurrency khi cập nhật Product {ProductId}", productToUpdate.Id);
-                return false;
+                _logger.LogError(ex, "Lỗi concurrency (tranh chấp) khi cập nhật Product {ProductId}", productToUpdate.Id);
+                return null; // Sửa: Trả về null khi có lỗi
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi không xác định khi cập nhật Product {ProductId}", productToUpdate.Id);
+                return null; // Sửa: Trả về null khi có lỗi
+            }
+        }
+
+        // <summary>
+        /// [Admin] Thêm một biến thể mới cho sản phẩm.
+        /// </summary>
+        public async Task<ProductVariant> AddProductVariantAsync(ProductVariant newVariant)
+        {
+            try
+            {
+                // Logic nghiệp vụ (như kiểm tra ProductId có tồn tại không) nên ở Service
+                // DAO chỉ thực hiện thêm.
+
+                // Set thời gian và trạng thái mặc định
+                if (newVariant is BaseModel baseModel)
+                {
+                    baseModel.CreatedAt = DateTime.UtcNow;
+                    baseModel.UpdatedAt = DateTime.UtcNow;
+                }
+                // Đảm bảo biến thể mới luôn active khi tạo
+                newVariant.IsActive = true;
+
+                await _context.ProductVariant.AddAsync(newVariant);
+                await _context.SaveChangesAsync();
+                return newVariant; // Trả về variant đã có Id
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi thêm mới ProductVariant cho Product {ProductId}", newVariant.ProductId);
+                // Ném lại lỗi để Service xử lý
+                throw;
             }
         }
 
@@ -147,30 +208,124 @@ namespace DataAccess
         /// </summary>
         public async Task<bool> DeleteProductAsync(int productId)
         {
-            var product = await _context.Product.FindAsync(productId);
+            // 1. Tìm sản phẩm VÀ các biến thể liên quan trong 1 truy vấn
+            var product = await _context.Product
+                .Include(p => p.ProductVariants)
+                .FirstOrDefaultAsync(a => a.Id == productId);
+
             if (product == null)
             {
-                throw new Exception($"Không tìm thấy sản phẩm với ID: {productId}");
+                return false;
             }
 
-            product.IsActive = false; // Soft delete
+            // 2. Đánh dấu xóa mềm
+            product.IsActive = false;
 
-            // Xóa mềm tất cả các biến thể của nó
-            var variants = await _context.ProductVariant.Where(v => v.ProductId == productId).ToListAsync();
-            foreach (var variant in variants)
+            // 3. Xóa mềm tất cả các biến thể của nó
+            foreach (var variant in product.ProductVariants)
             {
                 variant.IsActive = false;
             }
 
-            _context.Product.Update(product);
-            _context.ProductVariant.UpdateRange(variants);
-
-            return await _context.SaveChangesAsync() > 0;
+            await _context.SaveChangesAsync();
+            return true; // Tìm thấy và đã xử lý -> trả về true
         }
 
         public async Task<List<ProductVariant>> GetProductVariantDefault()
         {
             return await _context.ProductVariant.Where(p => p.IsDefault == true && p.IsActive == true).ToListAsync();
+        }
+
+
+
+
+
+
+
+        /// <summary>
+        /// [Admin] Cập nhật thông tin chi tiết của MỘT biến thể (giá, tồn kho, SKU...).
+        /// (Hàm này thay thế hàm UpdateVariantAsync cũ, dùng cách fetch-then-update an toàn hơn,
+        /// giống với hàm UpdateProductAsync)
+        /// </summary>
+        public async Task<ProductVariant?> UpdateProductVariantAsync(ProductVariant variantToUpdate)
+        {
+            try
+            {
+                // 1. Tải biến thể gốc từ DB
+                var existingVariant = await _context.ProductVariant
+                    .FirstOrDefaultAsync(v => v.Id == variantToUpdate.Id);
+
+                if (existingVariant == null)
+                {
+                    _logger.LogWarning("Không tìm thấy ProductVariant {VariantId} để cập nhật", variantToUpdate.Id);
+                    return null;
+                }
+
+                // 2. Cập nhật thủ công các trường
+                // Không cập nhật ProductId hoặc Id
+                existingVariant.Name = variantToUpdate.Name;
+                existingVariant.Price = variantToUpdate.Price;
+                existingVariant.CostPrice = variantToUpdate.CostPrice;
+                existingVariant.Weight = variantToUpdate.Weight;
+                existingVariant.SKU = variantToUpdate.SKU;
+                existingVariant.StockQuantity = variantToUpdate.StockQuantity;
+                existingVariant.HoldQuantity = variantToUpdate.HoldQuantity; // Logic Hold nên ở Service, nhưng DAO cho phép cập nhật
+                existingVariant.Dimensions = variantToUpdate.Dimensions;
+                existingVariant.IsDefault = variantToUpdate.IsDefault;
+                existingVariant.IsActive = variantToUpdate.IsActive;
+
+                // 3. Cập nhật thời gian
+                if (existingVariant is BaseModel baseModel)
+                {
+                    baseModel.UpdatedAt = DateTime.UtcNow;
+                }
+
+                // 4. Lưu thay đổi
+                await _context.SaveChangesAsync();
+                return existingVariant;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi không xác định khi cập nhật ProductVariant {VariantId}", variantToUpdate.Id);
+                return null;
+            }
+        }
+
+
+        /// <summary>
+        /// [Admin] Xóa mềm một biến thể (set IsActive = false).
+        /// Tương tự như DeleteProductAsync, không nên xóa cứng.
+        /// </summary>
+        public async Task<bool> DeleteProductVariantAsync(int productVariantId)
+        {
+            try
+            {
+                var variant = await _context.ProductVariant
+                    .FirstOrDefaultAsync(v => v.Id == productVariantId);
+
+                if (variant == null)
+                {
+                    _logger.LogWarning("Không tìm thấy ProductVariant {VariantId} để xóa mềm.", productVariantId);
+                    return false; // Không tìm thấy
+                }
+
+                // Đánh dấu xóa mềm
+                variant.IsActive = false;
+
+                // Cập nhật thời gian
+                if (variant is BaseModel baseModel)
+                {
+                    baseModel.UpdatedAt = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+                return true; // Xóa mềm thành công
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xóa mềm ProductVariant {VariantId}", productVariantId);
+                return false;
+            }
         }
     }
 }

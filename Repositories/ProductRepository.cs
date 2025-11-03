@@ -37,5 +37,25 @@ namespace Repositories
         {
             return await _productDao.SearchProductsAsync(searchTerm);
         }
+
+        public async Task<Product> AddProductAsync(Product product)
+        {
+            return await _productDao.CreateProductAsync(product);
+        }
+
+        public async Task<Product?> UpdateProductAsync(Product product)
+        {
+            return await _productDao.UpdateProductAsync(product);
+        }
+
+        public async Task<bool> DeleteProductAsync(int productId)
+        {
+            return await _productDao.DeleteProductAsync(productId);
+        }
+
+        public async Task<ProductVariant> AddProductVariantAsync(ProductVariant newVariant)
+        {
+            return await _productDao.AddProductVariantAsync(newVariant);
+        }
     }
 }

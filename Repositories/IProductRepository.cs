@@ -15,5 +15,12 @@ namespace Repositories
 
         Task<List<Product>> SearchProductsAsync(string searchTerm);
         Task<List<ProductVariant>> GetProductVariantDefault();
+        Task<Product> AddProductAsync(Product product);
+
+        Task<Product> UpdateProductAsync(Product product);
+
+        Task<bool> DeleteProductAsync(int productId);
+
+        Task<ProductVariant> AddProductVariantAsync(ProductVariant newVariant);
     }
 }

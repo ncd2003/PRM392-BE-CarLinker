@@ -17,7 +17,6 @@ namespace BusinessObjects.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .UseCollation("Vietnamese_CI_AS")
                 .HasAnnotation("ProductVersion", "8.0.20")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
@@ -49,8 +48,7 @@ namespace BusinessObjects.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
@@ -127,8 +125,7 @@ namespace BusinessObjects.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Image")
                         .HasMaxLength(255)
@@ -140,8 +137,7 @@ namespace BusinessObjects.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
@@ -170,10 +166,21 @@ namespace BusinessObjects.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Image")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Latitude")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Longitude")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OperatingTime")
                         .IsRequired()
@@ -186,7 +193,13 @@ namespace BusinessObjects.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
                     b.ToTable("Garage");
                 });
@@ -208,8 +221,7 @@ namespace BusinessObjects.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -217,8 +229,7 @@ namespace BusinessObjects.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
@@ -252,8 +263,7 @@ namespace BusinessObjects.Migrations
                     b.Property<string>("Value")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
@@ -293,8 +303,7 @@ namespace BusinessObjects.Migrations
 
                     b.Property<string>("ShippingAddress")
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -364,8 +373,7 @@ namespace BusinessObjects.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Image")
                         .HasMaxLength(255)
@@ -383,8 +391,7 @@ namespace BusinessObjects.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
@@ -420,8 +427,7 @@ namespace BusinessObjects.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
@@ -464,8 +470,7 @@ namespace BusinessObjects.Migrations
 
                     b.Property<string>("Dimensions")
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("varchar(100)");
 
                     b.Property<int>("HoldQuantity")
                         .HasColumnType("int");
@@ -479,8 +484,7 @@ namespace BusinessObjects.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 2)
@@ -511,9 +515,7 @@ namespace BusinessObjects.Migrations
                         .HasFilter("[SKU] IS NOT NULL");
 
                     b.HasIndex("ProductId", "IsDefault")
-                        .IsUnique()
-                        .HasDatabaseName("UX_ProductVariant_ProductId_IsDefault")
-                        .HasFilter("[IsDefault] = 1");
+                        .HasDatabaseName("UX_ProductVariant_ProductId_IsDefault");
 
                     b.ToTable("ProductVariant");
                 });
@@ -549,7 +551,38 @@ namespace BusinessObjects.Migrations
                     b.ToTable("ProductVariantOption");
                 });
 
-            modelBuilder.Entity("BusinessObjects.Models.Service", b =>
+            modelBuilder.Entity("BusinessObjects.Models.ServiceCategory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset?>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("GarageId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GarageId");
+
+                    b.ToTable("ServiceCategory");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.ServiceItem", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -565,22 +598,72 @@ namespace BusinessObjects.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<double>("PriceFrom")
-                        .HasColumnType("float");
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<double>("PriceTo")
-                        .HasColumnType("float");
+                    b.Property<int?>("ServiceCategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ServiceRecordId")
+                        .HasColumnType("int");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Service");
+                    b.HasIndex("ServiceCategoryId");
+
+                    b.HasIndex("ServiceRecordId");
+
+                    b.ToTable("ServiceItem");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.ServiceRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset?>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTime?>("EndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ServiceRecordStatus")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<decimal?>("TotalCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("VehicleId");
+
+                    b.ToTable("ServiceRecord", (string)null);
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.Transaction", b =>
@@ -651,8 +734,10 @@ namespace BusinessObjects.Migrations
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Image")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -705,14 +790,17 @@ namespace BusinessObjects.Migrations
 
                     b.Property<string>("Brand")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTimeOffset?>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<int>("FuelType")
                         .HasColumnType("int");
+
+                    b.Property<string>("Image")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -724,8 +812,7 @@ namespace BusinessObjects.Migrations
 
                     b.Property<string>("Model")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .UseCollation("Vietnamese_CI_AS");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("TransmissionType")
                         .HasColumnType("int");
@@ -777,6 +864,17 @@ namespace BusinessObjects.Migrations
                     b.Navigation("Cart");
 
                     b.Navigation("ProductVariant");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.Garage", b =>
+                {
+                    b.HasOne("BusinessObjects.Models.User", "User")
+                        .WithOne()
+                        .HasForeignKey("BusinessObjects.Models.Garage", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.OptionValue", b =>
@@ -887,6 +985,50 @@ namespace BusinessObjects.Migrations
                     b.Navigation("ProductVariant");
                 });
 
+            modelBuilder.Entity("BusinessObjects.Models.ServiceCategory", b =>
+                {
+                    b.HasOne("BusinessObjects.Models.Garage", "Garage")
+                        .WithMany("ServiceCategories")
+                        .HasForeignKey("GarageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Garage");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.ServiceItem", b =>
+                {
+                    b.HasOne("BusinessObjects.Models.ServiceCategory", "ServiceCategory")
+                        .WithMany("ServiceItems")
+                        .HasForeignKey("ServiceCategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("BusinessObjects.Models.ServiceRecord", null)
+                        .WithMany("ServiceItems")
+                        .HasForeignKey("ServiceRecordId");
+
+                    b.Navigation("ServiceCategory");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.ServiceRecord", b =>
+                {
+                    b.HasOne("BusinessObjects.Models.User", "User")
+                        .WithMany("ServiceRecords")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BusinessObjects.Models.Vehicle", "Vehicle")
+                        .WithMany("ServiceRecords")
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("Vehicle");
+                });
+
             modelBuilder.Entity("BusinessObjects.Models.Transaction", b =>
                 {
                     b.HasOne("BusinessObjects.Models.User", "User")
@@ -922,6 +1064,11 @@ namespace BusinessObjects.Migrations
             modelBuilder.Entity("BusinessObjects.Models.Category", b =>
                 {
                     b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.Garage", b =>
+                {
+                    b.Navigation("ServiceCategories");
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.Manufacturer", b =>
@@ -960,6 +1107,16 @@ namespace BusinessObjects.Migrations
                     b.Navigation("ProductVariantOptions");
                 });
 
+            modelBuilder.Entity("BusinessObjects.Models.ServiceCategory", b =>
+                {
+                    b.Navigation("ServiceItems");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.ServiceRecord", b =>
+                {
+                    b.Navigation("ServiceItems");
+                });
+
             modelBuilder.Entity("BusinessObjects.Models.User", b =>
                 {
                     b.Navigation("Cart")
@@ -967,9 +1124,16 @@ namespace BusinessObjects.Migrations
 
                     b.Navigation("Orders");
 
+                    b.Navigation("ServiceRecords");
+
                     b.Navigation("Transactions");
 
                     b.Navigation("Vehicles");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.Vehicle", b =>
+                {
+                    b.Navigation("ServiceRecords");
                 });
 #pragma warning restore 612, 618
         }

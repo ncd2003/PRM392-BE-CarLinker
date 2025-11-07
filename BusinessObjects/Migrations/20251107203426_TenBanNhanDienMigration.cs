@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BusinessObjects.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialDB : Migration
+    public partial class TenBanNhanDienMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,7 +17,7 @@ namespace BusinessObjects.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false, collation: "Vietnamese_CI_AS"),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Country = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Image = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
@@ -35,8 +35,8 @@ namespace BusinessObjects.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false, collation: "Vietnamese_CI_AS"),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true, collation: "Vietnamese_CI_AS"),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Image = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
@@ -48,34 +48,15 @@ namespace BusinessObjects.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Garage",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false, collation: "Vietnamese_CI_AS"),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    OperatingTime = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PhoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Garage", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Manufacturer",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false, collation: "Vietnamese_CI_AS"),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Country = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Website = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true, collation: "Vietnamese_CI_AS"),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
@@ -86,33 +67,16 @@ namespace BusinessObjects.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Service",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false, collation: "Vietnamese_CI_AS"),
-                    PriceFrom = table.Column<double>(type: "float", nullable: false),
-                    PriceTo = table.Column<double>(type: "float", nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Service", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "User",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    FullName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false, collation: "Vietnamese_CI_AS"),
+                    FullName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     PhoneNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     PasswordHash = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    Image = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     UserRole = table.Column<int>(type: "int", maxLength: 50, nullable: false),
                     UserStatus = table.Column<int>(type: "int", nullable: false),
                     RefreshToken = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
@@ -135,8 +99,8 @@ namespace BusinessObjects.Migrations
                     CategoryId = table.Column<int>(type: "int", nullable: false),
                     ManufacturerId = table.Column<int>(type: "int", nullable: false),
                     BrandId = table.Column<int>(type: "int", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false, collation: "Vietnamese_CI_AS"),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true, collation: "Vietnamese_CI_AS"),
+                    Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Image = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     WarrantyPeriod = table.Column<int>(type: "int", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
@@ -187,16 +151,47 @@ namespace BusinessObjects.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Garage",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    OperatingTime = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PhoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Image = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Latitude = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Longitude = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Garage", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Garage_User_UserId",
+                        column: x => x.UserId,
+                        principalTable: "User",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Order",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<int>(type: "int", nullable: true),
+                    FullName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Enail = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     TotalAmount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     PaymentMethod = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    ShippingAddress = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true, collation: "Vietnamese_CI_AS"),
+                    ShippingAddress = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     PhoneNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     OrderDate = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()")
                 },
@@ -247,8 +242,8 @@ namespace BusinessObjects.Migrations
                     LicensePlate = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     FuelType = table.Column<int>(type: "int", nullable: false),
                     TransmissionType = table.Column<int>(type: "int", nullable: false),
-                    Brand = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true, collation: "Vietnamese_CI_AS"),
-                    Model = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true, collation: "Vietnamese_CI_AS"),
+                    Brand = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    Model = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     Year = table.Column<int>(type: "int", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     Image = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -273,7 +268,7 @@ namespace BusinessObjects.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false, collation: "Vietnamese_CI_AS"),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Type = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     Unit = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     IsRequired = table.Column<bool>(type: "bit", nullable: false),
@@ -299,14 +294,14 @@ namespace BusinessObjects.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ProductId = table.Column<int>(type: "int", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false, collation: "Vietnamese_CI_AS"),
+                    Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     Price = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     CostPrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: true),
                     Weight = table.Column<decimal>(type: "decimal(8,2)", precision: 8, scale: 2, nullable: true),
                     SKU = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     StockQuantity = table.Column<int>(type: "int", nullable: false),
                     HoldQuantity = table.Column<int>(type: "int", nullable: false),
-                    Dimensions = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true, collation: "Vietnamese_CI_AS"),
+                    Dimensions = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true),
                     IsDefault = table.Column<bool>(type: "bit", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
@@ -324,13 +319,68 @@ namespace BusinessObjects.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ServiceCategory",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    GarageId = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ServiceCategory", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ServiceCategory_Garage_GarageId",
+                        column: x => x.GarageId,
+                        principalTable: "Garage",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ServiceRecord",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ServiceRecordStatus = table.Column<int>(type: "int", nullable: false),
+                    TotalCost = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: true),
+                    StartTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
+                    EndTime = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    VehicleId = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ServiceRecord", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ServiceRecord_User_UserId",
+                        column: x => x.UserId,
+                        principalTable: "User",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ServiceRecord_Vehicle_VehicleId",
+                        column: x => x.VehicleId,
+                        principalTable: "Vehicle",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "OptionValue",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     OptionId = table.Column<int>(type: "int", nullable: false),
-                    Value = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false, collation: "Vietnamese_CI_AS"),
+                    Value = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
                 },
@@ -404,6 +454,36 @@ namespace BusinessObjects.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ServiceItem",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Price = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    ServiceCategoryId = table.Column<int>(type: "int", nullable: true),
+                    ServiceRecordId = table.Column<int>(type: "int", nullable: true),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ServiceItem", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ServiceItem_ServiceCategory_ServiceCategoryId",
+                        column: x => x.ServiceCategoryId,
+                        principalTable: "ServiceCategory",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_ServiceItem_ServiceRecord_ServiceRecordId",
+                        column: x => x.ServiceRecordId,
+                        principalTable: "ServiceRecord",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ProductVariantOption",
                 columns: table => new
                 {
@@ -445,6 +525,12 @@ namespace BusinessObjects.Migrations
                 name: "IX_CartItem_ProductVariantId",
                 table: "CartItem",
                 column: "ProductVariantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Garage_UserId",
+                table: "Garage",
+                column: "UserId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_OptionValue_OptionId",
@@ -490,9 +576,7 @@ namespace BusinessObjects.Migrations
             migrationBuilder.CreateIndex(
                 name: "UX_ProductVariant_ProductId_IsDefault",
                 table: "ProductVariant",
-                columns: new[] { "ProductId", "IsDefault" },
-                unique: true,
-                filter: "[IsDefault] = 1");
+                columns: new[] { "ProductId", "IsDefault" });
 
             migrationBuilder.CreateIndex(
                 name: "UX_ProductVariant_SKU",
@@ -511,6 +595,31 @@ namespace BusinessObjects.Migrations
                 table: "ProductVariantOption",
                 columns: new[] { "VariantId", "OptionValueId" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ServiceCategory_GarageId",
+                table: "ServiceCategory",
+                column: "GarageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ServiceItem_ServiceCategoryId",
+                table: "ServiceItem",
+                column: "ServiceCategoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ServiceItem_ServiceRecordId",
+                table: "ServiceItem",
+                column: "ServiceRecordId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ServiceRecord_UserId",
+                table: "ServiceRecord",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ServiceRecord_VehicleId",
+                table: "ServiceRecord",
+                column: "VehicleId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Transaction_UserId",
@@ -549,22 +658,16 @@ namespace BusinessObjects.Migrations
                 name: "CartItem");
 
             migrationBuilder.DropTable(
-                name: "Garage");
-
-            migrationBuilder.DropTable(
                 name: "OrderItem");
 
             migrationBuilder.DropTable(
                 name: "ProductVariantOption");
 
             migrationBuilder.DropTable(
-                name: "Service");
+                name: "ServiceItem");
 
             migrationBuilder.DropTable(
                 name: "Transaction");
-
-            migrationBuilder.DropTable(
-                name: "Vehicle");
 
             migrationBuilder.DropTable(
                 name: "Cart");
@@ -579,13 +682,25 @@ namespace BusinessObjects.Migrations
                 name: "ProductVariant");
 
             migrationBuilder.DropTable(
-                name: "User");
+                name: "ServiceCategory");
+
+            migrationBuilder.DropTable(
+                name: "ServiceRecord");
 
             migrationBuilder.DropTable(
                 name: "ProductOption");
 
             migrationBuilder.DropTable(
+                name: "Garage");
+
+            migrationBuilder.DropTable(
+                name: "Vehicle");
+
+            migrationBuilder.DropTable(
                 name: "Product");
+
+            migrationBuilder.DropTable(
+                name: "User");
 
             migrationBuilder.DropTable(
                 name: "Brand");

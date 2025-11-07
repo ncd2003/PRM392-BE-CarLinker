@@ -54,7 +54,6 @@ namespace DataAccess
             {
                 "username" => isAsc ? query.OrderBy(u => u.FullName) : query.OrderByDescending(u => u.FullName),
                 "email" => isAsc ? query.OrderBy(u => u.Email) : query.OrderByDescending(u => u.Email),
-                "role" => isAsc ? query.OrderBy(u => u.UserRole) : query.OrderByDescending(u => u.UserRole),
                 "status" => isAsc ? query.OrderBy(u => u.UserStatus) : query.OrderByDescending(u => u.UserStatus),
                 "createdat" => isAsc ? query.OrderBy(u => u.CreatedAt) : query.OrderByDescending(u => u.CreatedAt),
                 _ => query.OrderByDescending(u => u.CreatedAt), // Default sorting

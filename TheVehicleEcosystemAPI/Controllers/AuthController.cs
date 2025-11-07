@@ -5,6 +5,7 @@ using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Repositories;
+using System.Data;
 using TheVehicleEcosystemAPI.Response.DTOs;
 using TheVehicleEcosystemAPI.Security;
 
@@ -57,11 +58,10 @@ namespace TheVehicleEcosystemAPI.Controllers
                 // Tạo user mới với Mapster và set các giá trị cần thiết
                 var newUser = request.Adapt<User>();
                 newUser.PasswordHash = passwordHash;
-                newUser.UserRole = Role.CUSTOMER;
                 newUser.UserStatus = UserStatus.ACTIVE;
                 newUser.IsActive = true;
                 newUser.CreatedAt = DateTimeOffset.UtcNow;
-                
+
                 // Generate tokens
                 var accessToken = _jwtConfiguration.GenerateJwtToken(newUser);
                 var refreshToken = _jwtConfiguration.GenerateRefreshToken(out DateTime refreshTokenExpiry);
@@ -164,7 +164,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// <summary>
         /// Refresh access token bằng refresh token
         /// </summary>
-        [HttpPost("refresh-token")]
+        [HttpPost("refresh")]
         [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]

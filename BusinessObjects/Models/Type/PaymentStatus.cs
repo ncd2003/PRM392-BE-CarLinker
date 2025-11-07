@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace BusinessObjects.Models.Type
 {
-    public enum Role
+    public enum PaymentStatus
     {
-        CUSTOMER, OWNER, DEALER, WAREHOUSE ,STAFF, MANAGER
+        PAID, UNPAID
     }
 }

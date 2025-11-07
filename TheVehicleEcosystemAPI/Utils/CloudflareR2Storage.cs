@@ -20,7 +20,7 @@ namespace TheVehicleEcosystemAPI.Utils
                 ?? throw new ArgumentNullException("BucketName", "R2Settings:BucketName is not configured");
             _accountId = configuration["R2Settings:AccountId"]
                 ?? throw new ArgumentNullException("AccountId", "R2Settings:AccountId is not configured");
-            
+
             var accessKey = configuration["R2Settings:AccessKey"]
                 ?? throw new ArgumentNullException("AccessKey", "R2Settings:AccessKey is not configured");
             var secretKey = configuration["R2Settings:SecretKey"]
@@ -184,7 +184,7 @@ namespace TheVehicleEcosystemAPI.Utils
                 }
 
                 using var memoryStream = new MemoryStream(fileBytes);
-                
+
                 var putRequest = new PutObjectRequest
                 {
                     BucketName = _bucketName,
@@ -284,7 +284,7 @@ namespace TheVehicleEcosystemAPI.Utils
 
                 var response = await _s3Client.DeleteObjectAsync(request);
 
-                if (response.HttpStatusCode == System.Net.HttpStatusCode.NoContent || 
+                if (response.HttpStatusCode == System.Net.HttpStatusCode.NoContent ||
                     response.HttpStatusCode == System.Net.HttpStatusCode.OK)
                 {
                     _logger.LogInformation("Image deleted successfully from R2: {Key}", key);
@@ -345,7 +345,7 @@ namespace TheVehicleEcosystemAPI.Utils
             {
                 var uri = new Uri(urlOrKey);
                 var path = uri.AbsolutePath.TrimStart('/');
-                
+
                 // If path starts with bucket name, remove it (for backward compatibility with old URLs)
                 if (path.StartsWith($"{_bucketName}/"))
                 {

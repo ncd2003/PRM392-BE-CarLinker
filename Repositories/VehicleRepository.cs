@@ -17,28 +17,9 @@ namespace Repositories
             _vehicleDAO = vehicleDAO ?? throw new ArgumentNullException(nameof(vehicleDAO));
         }
 
-        public async Task<IEnumerable<Vehicle>> GetAllAsync()
+        public async Task<IEnumerable<Vehicle>> GetAllByUserIdAsync(int userId)
         {
-            return await _vehicleDAO.GetAll();
-        }
-
-        public async Task<(IEnumerable<Vehicle> items, int total)> GetAllAsync(
-            int page,
-            int pageSize,
-            string? sortBy = null,
-            bool isAsc = true)
-        {
-            // Validate pagination parameters
-            if (page <= 0)
-                throw new ArgumentException("Page must be greater than 0", nameof(page));
-
-            if (pageSize <= 0)
-                throw new ArgumentException("Page size must be greater than 0", nameof(pageSize));
-
-            if (pageSize > 100)
-                throw new ArgumentException("Page size cannot exceed 100", nameof(pageSize));
-
-            return await _vehicleDAO.GetAll(page, pageSize, sortBy, isAsc);
+            return await _vehicleDAO.GetAllByUserId(userId);
         }
 
         public async Task<Vehicle?> GetByIdAsync(int id)
@@ -71,7 +52,7 @@ namespace Repositories
             await _vehicleDAO.Add(vehicle);
         }
 
-        public async Task UpdateAsync(int id, Vehicle vehicle)
+        public async Task UpdateAsync(Vehicle vehicle)
         {
             // Validation
             if (vehicle == null)
@@ -79,26 +60,27 @@ namespace Repositories
                 throw new ArgumentNullException(nameof(vehicle), "Vehicle cannot be null");
             }
 
-            if (id <= 0)
+            if (vehicle.Id <= 0)
             {
-                throw new ArgumentException("Invalid vehicle ID", nameof(id));
+                throw new ArgumentException("Invalid vehicle ID", nameof(vehicle.Id));
             }
 
             if (string.IsNullOrWhiteSpace(vehicle.LicensePlate))
             {
                 throw new ArgumentException("License plate is required", nameof(vehicle.LicensePlate));
             }
-            if (await _vehicleDAO.IsExistByLicensePlate(vehicle.LicensePlate))
+            var vehicleDB = await _vehicleDAO.GetById(vehicle.Id);
+            if (vehicleDB == null)
+            {
+                throw new KeyNotFoundException($"Vehicle with ID {vehicle.Id} not found");
+            }
+            if (vehicleDB.Id != vehicle.Id && await _vehicleDAO.IsExistByLicensePlate(vehicle.LicensePlate))
             {
                 throw new ArgumentException("License plate already existed", nameof(vehicle.LicensePlate));
             }
 
             // Get existing vehicle
-            var vehicleDB = await _vehicleDAO.GetById(id);
-            if (vehicleDB == null)
-            {
-                throw new KeyNotFoundException($"Vehicle with ID {vehicle.Id} not found");
-            }
+
 
             // Update properties
             vehicleDB.LicensePlate = vehicle.LicensePlate;
@@ -114,7 +96,6 @@ namespace Repositories
 
         public async Task DeleteAsync(int id)
         {
-            // Validate ID
             if (id <= 0)
             {
                 throw new ArgumentException("ID must be greater than 0", nameof(id));

@@ -15,7 +15,6 @@ namespace TheVehicleEcosystemAPI.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    [Produces("application/json")]
     public class VehicleController : ControllerBase
     {
         private readonly IVehicleRepository _vehicleRepository;
@@ -23,7 +22,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         private readonly CloudflareR2Storage _r2Storage;
 
         public VehicleController(
-            IVehicleRepository vehicleRepository, 
+            IVehicleRepository vehicleRepository,
             ILogger<VehicleController> logger,
             CloudflareR2Storage r2Storage)
         {
@@ -32,28 +31,18 @@ namespace TheVehicleEcosystemAPI.Controllers
             _r2Storage = r2Storage;
         }
 
-        [HttpGet]
-        //[Authorize(Roles = "CUSTOMER")]
-        [ProducesResponseType(typeof(ApiResponse<PaginatedData<VehicleDto>>), StatusCodes.Status200OK)]
+        [HttpGet("user")]
+        [Authorize(Roles = "CUSTOMER")]
+        [ProducesResponseType(typeof(ApiResponse<VehicleDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<PaginatedData<VehicleDto>>>> GetAllVehicles(
-            [FromQuery] int page = 1,
-            [FromQuery] int size = 30,
-            [FromQuery] string? sortBy = null,
-            [FromQuery] bool isAsc = true)
+        public async Task<ActionResult<ApiResponse<VehicleDto>>> GetAllVehiclesByUserId()
         {
             try
             {
-                var (items, total) = await _vehicleRepository.GetAllAsync(page, size, sortBy, isAsc);
+                var items = await _vehicleRepository.GetAllByUserIdAsync(UserContextHelper.GetUserId(User).Value);
                 var vehicleDtos = items.Select(v => v.Adapt<VehicleDto>());
-
-                var paginatedData = new PaginatedData<VehicleDto>(vehicleDtos, total, page, size);
-                var response = ApiResponse<PaginatedData<VehicleDto>>.Success(
-                    "Lấy danh sách xe thành công",
-                    paginatedData);
-
-                return Ok(response);
+                return Ok(ApiResponse<IEnumerable<VehicleDto>>.Success("Lấy danh sách xe thành công", vehicleDtos));
             }
             catch (ArgumentException ex)
             {
@@ -69,7 +58,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         [HttpGet("{id}")]
-        //[Authorize(Roles = "CUSTOMER")]
+        [Authorize(Roles = "CUSTOMER")]
         [ProducesResponseType(typeof(ApiResponse<VehicleDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -136,13 +125,13 @@ namespace TheVehicleEcosystemAPI.Controllers
                 }
 
                 Vehicle vehicle = vehicleCreateDto.Adapt<Vehicle>();
-                
+
                 // Get UserId from claims, or use default for testing
                 vehicle.UserId = UserContextHelper.GetUserId(User).Value;
                 vehicle.Image = imageUrl ?? string.Empty;
-                
+
                 await _vehicleRepository.AddAsync(vehicle);
-                
+
                 return Created("", ApiResponse<VehicleCreateDto>.Created("Tạo xe thành công", vehicleCreateDto));
             }
             catch (ArgumentException ex)
@@ -159,7 +148,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         [HttpPatch("{id}")]
-        //[Authorize(Roles = "CUSTOMER")]
+        [Authorize(Roles = "CUSTOMER")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -175,23 +164,23 @@ namespace TheVehicleEcosystemAPI.Controllers
                 }
 
                 // Get existing vehicle first
-                var existingVehicle = await _vehicleRepository.GetByIdAsync(id);
-                if (existingVehicle == null)
+                var vehicleDB = await _vehicleRepository.GetByIdAsync(id);
+                if (vehicleDB == null)
                 {
                     var notFoundResponse = ApiResponse<object>.NotFound($"Không tìm thấy xe với ID {id}");
                     return NotFound(notFoundResponse);
                 }
 
                 // Upload new image to R2 if provided
-                string? imageUrl = existingVehicle.Image; // Keep old image by default
+                string? imageUrl = vehicleDB.Image; // Keep old image by default
                 if (imageFile != null)
                 {
                     try
                     {
                         // Delete old image from R2 if exists
-                        if (!string.IsNullOrEmpty(existingVehicle.Image))
+                        if (!string.IsNullOrEmpty(vehicleDB.Image))
                         {
-                            await _r2Storage.DeleteImageAsync(existingVehicle.Image);
+                            await _r2Storage.DeleteImageAsync(vehicleDB.Image);
                             _logger.LogInformation("Old image deleted from R2 for vehicle ID {VehicleId}", id);
                         }
 
@@ -208,13 +197,12 @@ namespace TheVehicleEcosystemAPI.Controllers
                 }
 
                 // Map DTO to entity
-                Vehicle vehicle = vehicleUpdateDto.Adapt<Vehicle>();
-                vehicle.UserId = UserContextHelper.GetUserId(User).Value;
-                vehicle.Image = imageUrl ?? string.Empty; // Use new image or keep old one
-                
-                await _vehicleRepository.UpdateAsync(id, vehicle);
-                var successResponse = ApiResponse<object>.Success("Cập nhật xe thành công");
-                return Ok(successResponse);
+                vehicleUpdateDto.Adapt(vehicleDB);
+                vehicleDB.UserId = UserContextHelper.GetUserId(User).Value;
+                vehicleDB.Image = imageUrl ?? string.Empty; // Use new image or keep old one
+
+                await _vehicleRepository.UpdateAsync(vehicleDB);
+                return Ok(ApiResponse<object>.Success("Cập nhật xe thành công"));
             }
             catch (KeyNotFoundException ex)
             {
@@ -234,7 +222,7 @@ namespace TheVehicleEcosystemAPI.Controllers
             }
         }
 
-        
+
         [HttpDelete("{id}")]
         //[Authorize(Roles = "CUSTOMER")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]

@@ -30,7 +30,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "GARAGE")]
+        [Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<PaginatedData<ServiceRecordDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -45,7 +45,6 @@ namespace TheVehicleEcosystemAPI.Controllers
             {
                 var (items, total) = await _serviceRecordRepository.GetAllAsync(page, size, sortBy, isAsc);
                 var serviceRecordDtos = items.Select(u => u.Adapt<ServiceRecordDto>());
-
                 var paginatedData = new PaginatedData<ServiceRecordDto>(serviceRecordDtos, total, page, size);
                 var response = ApiResponse<PaginatedData<ServiceRecordDto>>.Success(
                     "Lấy danh sách dịch vụ thành công",
@@ -204,7 +203,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         [HttpPatch("{id}")]
-        [Authorize(Roles = "GARAGE")]
+        [Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<ServiceRecordUpdateDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]

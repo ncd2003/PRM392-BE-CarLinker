@@ -66,7 +66,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "GARAGE")]
+        [Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<ServiceItemDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -98,7 +98,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "GARAGE")]
+        [Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<ServiceItemCreateDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
@@ -131,7 +131,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         [HttpPatch("{id}")]
-        [Authorize(Roles = "GARAGE")]
+        [Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<ServiceItemUpdateDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -171,7 +171,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "GARAGE")]
+        [Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]

@@ -18,9 +18,43 @@ namespace DataAccess
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<Garage> Get()
+        public async Task<(IEnumerable<Garage> items, int total)> GetAll(
+            int page,
+            int pageSize,
+            string? sortBy = null,
+            bool isAsc = true)
         {
-            return await _context.Garage.FirstAsync();
+            var query = _context.Garage.Where(s => s.IsActive).AsQueryable();
+
+            var total = await query.CountAsync();
+
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+                query = ApplySorting(query, sortBy, isAsc);
+            }
+            else
+            {
+                query = query.OrderByDescending(s => s.CreatedAt);
+            }
+
+            // Apply pagination
+            var items = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, total);
+        }
+
+        private IQueryable<Garage> ApplySorting(IQueryable<Garage> query, string sortBy, bool isAsc)
+        {
+            var sortByLower = sortBy.ToLower();
+            return sortByLower switch
+            {
+                "name" => isAsc ? query.OrderBy(s => s.Name) : query.OrderByDescending(s => s.Name),
+                "createdat" => isAsc ? query.OrderBy(s => s.CreatedAt) : query.OrderByDescending(s => s.CreatedAt),
+                _ => query.OrderByDescending(s => s.CreatedAt), // Default sorting
+            };
         }
 
         public async Task Add(Garage garage)
@@ -28,8 +62,18 @@ namespace DataAccess
             await _context.Garage.AddAsync(garage);
             await _context.SaveChangesAsync();
         }
+        public async Task<Garage?> GetById(int id)
+        {
+            return await _context.Garage.FirstOrDefaultAsync(g => g.Id == id && g.IsActive);
+
+        }
 
         public async Task Update(Garage garage)
+        {
+            _context.Garage.Update(garage);
+            await _context.SaveChangesAsync();
+        }
+        public async Task Delete(Garage garage)
         {
             _context.Garage.Update(garage);
             await _context.SaveChangesAsync();

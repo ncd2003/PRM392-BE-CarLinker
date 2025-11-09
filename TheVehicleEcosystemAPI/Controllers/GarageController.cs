@@ -1,5 +1,7 @@
 ﻿using BusinessObjects.Models;
 using BusinessObjects.Models.DTOs.Garage;
+using BusinessObjects.Models.DTOs.ServiceRecord;
+using DataAccess;
 using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,13 +36,19 @@ namespace TheVehicleEcosystemAPI.Controllers
         [ProducesResponseType(typeof(ApiResponse<PaginatedData<GarageDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<GarageDto>>> GetGarage()
+        public async Task<ActionResult<ApiResponse<PaginatedData<Garage>>>> GetAllGarages(
+           [FromQuery] int page = 1,
+           [FromQuery] int size = 30,
+           [FromQuery] string? sortBy = null,
+           [FromQuery] bool isAsc = true)
         {
             try
             {
-                Garage garageDB = await _garageRepository.GetAsync();
-                GarageDto garageDtos = garageDB.Adapt<GarageDto>();
-                return Ok(ApiResponse<GarageDto>.Success("Lấygara thành công", garageDtos));
+                var (items, total) = await _garageRepository.GetAllAsync(page, size, sortBy, isAsc);
+                var garageDtos = items.Select(g => g.Adapt<GarageDto>());
+                var paginatedData = new PaginatedData<GarageDto>(garageDtos, total, page, size);
+                var response = ApiResponse<PaginatedData<GarageDto>>.Success("Lấy danh sách gara thành công",paginatedData);
+                return Ok(response);
             }
             catch (ArgumentException ex)
             {
@@ -55,7 +63,7 @@ namespace TheVehicleEcosystemAPI.Controllers
             }
         }
         [HttpPost]
-        [Authorize(Roles = "GARAGE")]
+        [Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<GarageCreateDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
@@ -105,13 +113,13 @@ namespace TheVehicleEcosystemAPI.Controllers
             }
         }
 
-        [HttpPatch]
-        [Authorize(Roles = "GARAGE")]
+        [HttpPatch("{id}")]
+        [Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<GarageUpdateDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<GarageUpdateDto>>> UpdateGarage([FromForm] GarageUpdateDto garageUpdateDto, IFormFile? imageFile)
+        public async Task<ActionResult<ApiResponse<GarageUpdateDto>>> UpdateGarage(int id, [FromForm] GarageUpdateDto garageUpdateDto, IFormFile? imageFile)
         {
             try
             {
@@ -122,7 +130,7 @@ namespace TheVehicleEcosystemAPI.Controllers
                 }
 
                 // Get existing garage first
-                Garage garageDB = await _garageRepository.GetAsync();
+                var garageDB = await _garageRepository.GetByIdAsync(id);
                 if (garageDB == null)
                 {
                     var notFoundResponse = ApiResponse<object>.NotFound("Không tìm thấy gara}");
@@ -157,7 +165,7 @@ namespace TheVehicleEcosystemAPI.Controllers
                 // Map DTO to entity
                 garageUpdateDto.Adapt(garageDB);
                 garageDB.UserId = UserContextHelper.GetUserId(User).Value;
-                garageDB.Image = imageUrl ?? string.Empty; 
+                garageDB.Image = imageUrl ?? string.Empty;
 
                 await _garageRepository.UpdateAsync(garageDB);
                 return Ok(ApiResponse<GarageUpdateDto>.Success("Cập nhật gara thành công"));

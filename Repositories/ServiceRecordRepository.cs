@@ -17,7 +17,7 @@ namespace Repositories
         public ServiceRecordRepository(ServiceRecordDAO serviceRecordDAO, ServiceItemDAO serviceItemDAO)
         {
             _serviceRecordDAO = serviceRecordDAO ?? throw new ArgumentNullException(nameof(serviceRecordDAO));
-            _serviceItemDAO = serviceItemDAO;
+            _serviceItemDAO = serviceItemDAO ?? throw new ArgumentNullException(nameof(serviceItemDAO));
         }
         public async Task AddAsync(ServiceRecord serviceRecord)
         {

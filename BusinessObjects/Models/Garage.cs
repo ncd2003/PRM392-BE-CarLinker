@@ -33,6 +33,8 @@ namespace BusinessObjects.Models
         public string Latitude { get; set; }
         public string Longitude { get; set; }
 
+        public bool IsActive { get; set; } = true;
+
         public int UserId { get; set; }
 
         [ForeignKey(nameof(UserId))]

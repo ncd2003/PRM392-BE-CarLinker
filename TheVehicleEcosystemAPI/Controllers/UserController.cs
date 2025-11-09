@@ -33,7 +33,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// Lấy danh sách tất cả user (Chỉ GARAGE)
         /// </summary>
         [HttpGet]
-        [Authorize(Roles = "GARAGE")]
+        [Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<PaginatedData<UserDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -113,7 +113,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// Tạo user mới (Chỉ GARAGE)
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "GARAGE")]
+        [Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
@@ -294,7 +294,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// Xóa user (Chỉ GARAGE)
         /// </summary>
         [HttpDelete("{id}")]
-        [Authorize(Roles = "GARAGE")]
+        [Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]

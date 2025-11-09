@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BusinessObjects.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    [Migration("20251107203426_TenBanNhanDienMigration")]
+    [Migration("20251109194644_TenBanNhanDienMigration")]
     partial class TenBanNhanDienMigration
     {
         /// <inheritdoc />
@@ -172,6 +172,9 @@ namespace BusinessObjects.Migrations
                     b.Property<string>("Image")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Latitude")
                         .IsRequired()

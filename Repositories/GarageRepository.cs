@@ -1,4 +1,6 @@
 ﻿using BusinessObjects.Models;
+using BusinessObjects.Models.DTOs.ServiceRecord;
+using BusinessObjects.Models.DTOs.Vehicle;
 using DataAccess;
 using System;
 using System.Collections.Generic;
@@ -20,14 +22,73 @@ namespace Repositories
             await _garageDAO.Add(vehicle);
         }
 
-        public async Task<Garage> GetAsync()
+        public async Task<(IEnumerable<Garage> items, int total)> GetAllAsync(int page, int pageSize, string? sortBy = null, bool isAsc = true)
         {
-            return await _garageDAO.Get();
+            // Validate pagination parameters
+            if (page <= 0)
+                throw new ArgumentException("Page must be greater than 0", nameof(page));
+
+            if (pageSize <= 0)
+                throw new ArgumentException("Page size must be greater than 0", nameof(pageSize));
+
+            if (pageSize > 100)
+                throw new ArgumentException("Page size cannot exceed 100", nameof(pageSize));
+
+            return await _garageDAO.GetAll(page, pageSize, sortBy, isAsc);
         }
+
 
         public async Task UpdateAsync(Garage garage)
         {
-            await _garageDAO.Update(garage);
+            if (garage == null)
+            {
+                throw new ArgumentNullException(nameof(garage), "Garage cannot be null");
+            }
+
+            if (garage.Id <= 0)
+            {
+                throw new ArgumentException("Invalid Garage ID", nameof(garage.Id));
+            }
+
+            var garageDB = await _garageDAO.GetById(garage.Id);
+            if (garageDB == null)
+            {
+                throw new KeyNotFoundException($"Garage with ID {garage.Id} not found");
+            }
+            garageDB.Name = garage.Name;
+            garageDB.Email = garage.Email;
+            garageDB.Description = garage.Description;
+            garageDB.OperatingTime = garage.OperatingTime;
+            garageDB.PhoneNumber = garage.PhoneNumber;
+            garageDB.Latitude = garage.Latitude;
+            garageDB.Longitude = garage.Longitude;
+
+            await _garageDAO.Update(garageDB);
+        }
+
+        public async Task<Garage?> GetByIdAsync(int id)
+        {
+            return await _garageDAO.GetById(id);
+        }
+
+
+        public async Task DeleteAsync(int id)
+        {
+            if (id <= 0)
+            {
+                throw new ArgumentException("ID must be greater than 0", nameof(id));
+            }
+
+            // Get existing vehicle
+            var garageDB = await _garageDAO.GetById(id);
+            if (garageDB == null)
+            {
+                throw new KeyNotFoundException($"Garage with ID {id} not found");
+            }
+
+            // Soft delete
+            garageDB.IsActive = false;
+            await _garageDAO.Delete(garageDB);
         }
     }
 }

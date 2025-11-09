@@ -67,7 +67,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// Lấy thông tin serviceCategory theo ID (ADMIN có thể xem tất cả, serviceCategory khác chỉ xem của mình)
         /// </summary>
         [HttpGet("{id}")]
-        [Authorize(Roles = "GARAGE")]
+        [Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<ServiceCategoryDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -98,12 +98,12 @@ namespace TheVehicleEcosystemAPI.Controllers
             }
         }
 
-        [HttpPost]
-        [Authorize(Roles = "GARAGE")]
+        [HttpPost("{garageId}")]
+        [Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<ServiceCategoryDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<ServiceCategoryDto>>> CreateServiceCategory([FromBody] ServiceCategoryCreateDto serviceCategoryCreateDto)
+        public async Task<ActionResult<ApiResponse<ServiceCategoryDto>>> CreateServiceCategory(int garageId, [FromBody] ServiceCategoryCreateDto serviceCategoryCreateDto)
         {
             try
             {
@@ -114,7 +114,7 @@ namespace TheVehicleEcosystemAPI.Controllers
                 }
 
                 // Get garage
-                var garageDB = await _garageRepository.GetAsync();
+                var garageDB = await _garageRepository.GetByIdAsync(garageId);
                 if (garageDB == null)
                 {
                     return NotFound(ApiResponse<object>.NotFound("Không tìm thấy gara liên kết."));
@@ -165,7 +165,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// Cập nhật thông tin serviceCategory (ADMIN có thể cập nhật tất cả, serviceCategory khác chỉ cập nhật của mình)
         /// </summary>
         [HttpPatch("{id}")]
-        [Authorize(Roles = "GARAGE")]
+        [Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<ServiceCategoryDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -246,7 +246,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// Xóa serviceCategory (Chỉ ADMIN)
         /// </summary>
         [HttpDelete("{id}")]
-        //[Authorize(Roles = "GARAGE")]
+        //[Authorize(Roles = "OWNER")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]

@@ -1,4 +1,5 @@
 ﻿using BusinessObjects.Models;
+using BusinessObjects.Models.DTOs.Vehicle;
 using DataAccess;
 using System;
 using System.Collections.Generic;
@@ -17,8 +18,9 @@ namespace Repositories
         }
         public async Task AddAsync(User user)
         {
-            if (user == null) {
-                throw new ArgumentNullException(nameof(user), "Vehicle cannot be null");
+            if (user == null)
+            {
+                throw new ArgumentNullException(nameof(user), "User cannot be null");
             }
             if (string.IsNullOrWhiteSpace(user.Email))
             {
@@ -27,9 +29,21 @@ namespace Repositories
             await _userDAO.Add(user);
         }
 
-        public Task DeleteAsync(int id)
+        public async Task DeleteAsync(int id)
         {
-            throw new NotImplementedException();
+            if (id <= 0)
+            {
+                throw new ArgumentException("ID must be greater than 0", nameof(id));
+            }
+
+            var userDB = await _userDAO.GetById(id);
+            if (userDB == null)
+            {
+                throw new KeyNotFoundException($"User with ID {id} not found");
+            }
+
+            userDB.IsActive = false;
+            await _userDAO.Delete(userDB);
         }
 
         public async Task<IEnumerable<User>> GetAllAsysnc()
@@ -56,7 +70,7 @@ namespace Repositories
 
         public async Task<User?> GetByIdAsync(int id)
         {
-            if(id <= 0)
+            if (id <= 0)
             {
                 throw new ArgumentException("ID must be greater than 0", nameof(id));
             }
@@ -78,9 +92,9 @@ namespace Repositories
             {
                 throw new ArgumentException("User ID must be greater than 0", nameof(user.Id));
             }
-            
-            var existingUser = await _userDAO.GetById(user.Id);
-            if (existingUser == null)
+
+            var userDB = await _userDAO.GetById(user.Id);
+            if (userDB == null)
             {
                 throw new KeyNotFoundException($"User with ID {user.Id} not found");
             }

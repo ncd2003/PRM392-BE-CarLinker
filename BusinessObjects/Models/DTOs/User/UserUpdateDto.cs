@@ -10,14 +10,10 @@ namespace BusinessObjects.Models.DTOs.User
 {
     public class UserUpdateDto
     {
-        [Required(ErrorMessage = "Tên đầy đủ là bắt buộc")]
-        public string FullName { get; set; }
-        [Required(ErrorMessage = "Email là bắt buộc")]
-        [EmailAddress(ErrorMessage = "Email không hợp lệ")]
-        public string Email { get; set; }
+        public string? FullName { get; set; }
+        public string? Email { get; set; }
         public string? PhoneNumber { get; set; }
+        public Role? UserRole { get; set; }
 
-        [Required(ErrorMessage = "Vai trò là bắt buộc")]
-        public string UserRole { get; set; }
     }
 }

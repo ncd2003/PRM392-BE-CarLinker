@@ -1,7 +1,6 @@
 ﻿using BusinessObjects;
 using BusinessObjects.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,34 +9,31 @@ using System.Threading.Tasks;
 
 namespace DataAccess
 {
-    public class ServiceDAO
+    public class GarageDAO
     {
         private readonly MyDbContext _context;
 
-        public ServiceDAO(MyDbContext context)
+        public GarageDAO(MyDbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<(IEnumerable<Service> items, int total)> GetAll(
+        public async Task<(IEnumerable<Garage> items, int total)> GetAll(
             int page,
             int pageSize,
             string? sortBy = null,
             bool isAsc = true)
         {
-            var query = _context.Service.Where(s => s.IsActive).AsQueryable();
+            var query = _context.Garage.Where(s => s.IsActive).AsQueryable();
 
-            // Get total before pagination
             var total = await query.CountAsync();
 
-            // Apply sorting
             if (!string.IsNullOrWhiteSpace(sortBy))
             {
                 query = ApplySorting(query, sortBy, isAsc);
             }
             else
             {
-                // Default sorting by CreatedAt descending
                 query = query.OrderByDescending(s => s.CreatedAt);
             }
 
@@ -50,7 +46,7 @@ namespace DataAccess
             return (items, total);
         }
 
-        private IQueryable<Service> ApplySorting(IQueryable<Service> query, string sortBy, bool isAsc)
+        private IQueryable<Garage> ApplySorting(IQueryable<Garage> query, string sortBy, bool isAsc)
         {
             var sortByLower = sortBy.ToLower();
             return sortByLower switch
@@ -60,28 +56,27 @@ namespace DataAccess
                 _ => query.OrderByDescending(s => s.CreatedAt), // Default sorting
             };
         }
-        public async Task<Service?> GetById(int id)
-        {
-            return await _context.Service.FirstOrDefaultAsync(s => s.Id == id && s.IsActive);
-        }
 
-        public async Task Add(Service service)
+        public async Task Add(Garage garage)
         {
-            await _context.Service.AddAsync(service);
+            await _context.Garage.AddAsync(garage);
             await _context.SaveChangesAsync();
         }
-
-        public async Task Update(Service service)
+        public async Task<Garage?> GetById(int id)
         {
-            _context.Service.Update(service);
-            await _context.SaveChangesAsync();
+            return await _context.Garage.FirstOrDefaultAsync(g => g.Id == id && g.IsActive);
+
         }
 
-        public async Task Delete(Service service)
+        public async Task Update(Garage garage)
         {
-            _context.Update(service);
+            _context.Garage.Update(garage);
             await _context.SaveChangesAsync();
         }
-
+        public async Task Delete(Garage garage)
+        {
+            _context.Garage.Update(garage);
+            await _context.SaveChangesAsync();
+        }
     }
 }

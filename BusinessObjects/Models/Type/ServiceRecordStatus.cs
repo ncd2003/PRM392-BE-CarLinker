@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace BusinessObjects.Models.Type
 {
-    public enum Role
+    public enum ServiceRecordStatus
     {
-        CUSTOMER, OWNER, DEALER, WAREHOUSE ,STAFF, MANAGER, ADMIN
+        PENDING, IN_PROGRESS,COMPLETED,CANCELLED
     }
 }

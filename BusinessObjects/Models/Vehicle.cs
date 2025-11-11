@@ -37,5 +37,8 @@ namespace BusinessObjects.Models
 
         [ForeignKey(nameof(UserId))]
         public virtual User User { get; set; } = default!;
+
+        // Navigation property for ServiceRecords
+        public virtual ICollection<ServiceRecord> ServiceRecords { get; set; } = new List<ServiceRecord>();
     }
 }

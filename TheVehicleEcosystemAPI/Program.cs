@@ -1,4 +1,5 @@
 ﻿using BusinessObjects;
+using BusinessObjects.Models.DTOs.Garage;
 using DataAccess;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -7,8 +8,8 @@ using Microsoft.OpenApi.Models;
 using Repositories;
 using System.Security.Claims;
 using System.Text;
-using TheVehicleEcosystemAPI.Utils;
 using TheVehicleEcosystemAPI.Security;
+using TheVehicleEcosystemAPI.Utils;
 using VNPAY.NET;
 
 namespace TheVehicleEcosystemAPI
@@ -37,22 +38,26 @@ namespace TheVehicleEcosystemAPI
             // Register DAOs
             builder.Services.AddScoped<VehicleDAO>();
             builder.Services.AddScoped<UserDAO>();
-            builder.Services.AddScoped<ServiceDAO>();
             builder.Services.AddScoped<CartDAO>();
             builder.Services.AddScoped<OrderDAO>();
             builder.Services.AddScoped<ProductDAO>();
             builder.Services.AddScoped<CategoryDAO>();
             builder.Services.AddScoped<BrandDAO>();
+            builder.Services.AddScoped<ServiceCategoryDAO>();
+            builder.Services.AddScoped<GarageDAO>();
+            builder.Services.AddScoped<ServiceItemDAO>();
 
             // Register Repositories
             builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
-            builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
             builder.Services.AddScoped<ICartRepository, CartRepository>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
             builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
             builder.Services.AddScoped<IBrandRepository, BrandRepository>();
+            builder.Services.AddScoped<IServiceCategoryRepository, ServiceCategoryRepository>();
+            builder.Services.AddScoped<IGarageRepository, GarageRepository>();
+            builder.Services.AddScoped<IServiceItemRepository, ServiceItemRepository>();
 
             // Register Cloudflare R2 Storage
             builder.Services.AddSingleton<CloudflareR2Storage>();

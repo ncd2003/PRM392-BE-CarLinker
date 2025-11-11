@@ -2,19 +2,12 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using System.Security.Claims;
 namespace BusinessObjects
 {
     public class MyDbContext : DbContext
     {
-        private readonly IHttpContextAccessor? _httpContextAccessor;
         public MyDbContext() { }
-
-        public MyDbContext(DbContextOptions<MyDbContext> options, IHttpContextAccessor? httpContextAccessor = null)
-            : base(options)
-        {
-            _httpContextAccessor = httpContextAccessor;
-        }
+        public MyDbContext(DbContextOptions<MyDbContext> options) : base(options) { }
 
         // --- 1. DbSet chính ---
         public DbSet<Brand> Brand { get; set; }
@@ -25,8 +18,10 @@ namespace BusinessObjects
         public DbSet<OptionValue> OptionValue { get; set; }
         public DbSet<ProductVariant> ProductVariant { get; set; }
         public DbSet<ProductVariantOption> ProductVariantOption { get; set; }
-        public DbSet<Service> Service { get; set; }
         public DbSet<Garage> Garage { get; set; }
+        public DbSet<ServiceCategory> ServiceCategory { get; set; }
+        public DbSet<ServiceItem> ServiceItem { get; set; }
+        public DbSet<ServiceRecord> ServiceRecord { get; set; }
 
         // --- 2. Các bảng người dùng và giao dịch ---
         public DbSet<User> User { get; set; }
@@ -59,96 +54,6 @@ namespace BusinessObjects
         {
             base.OnModelCreating(modelBuilder);
 
-            // ============================================================
-            // ✅ SET COLLATION CHO DATABASE & CÁC CỘT TIẾNG VIỆT
-            // ============================================================
-
-            if (Database.IsSqlServer())
-            {
-                modelBuilder.UseCollation("Vietnamese_CI_AS");
-            }
-
-            // PRODUCT
-            modelBuilder.Entity<Product>()
-                .Property(p => p.Name)
-                .UseCollation("Vietnamese_CI_AS");
-
-            modelBuilder.Entity<Product>()
-                .Property(p => p.Description)
-                .UseCollation("Vietnamese_CI_AS");
-
-            // CATEGORY
-            modelBuilder.Entity<Category>()
-                .Property(c => c.Name)
-                .UseCollation("Vietnamese_CI_AS");
-
-            modelBuilder.Entity<Category>()
-                .Property(c => c.Description)
-                .UseCollation("Vietnamese_CI_AS");
-
-            // BRAND
-            modelBuilder.Entity<Brand>()
-                .Property(b => b.Name)
-                .UseCollation("Vietnamese_CI_AS");
-
-            // MANUFACTURER
-            modelBuilder.Entity<Manufacturer>()
-                .Property(m => m.Name)
-                .UseCollation("Vietnamese_CI_AS");
-
-            modelBuilder.Entity<Manufacturer>()
-                .Property(m => m.Description)
-                .UseCollation("Vietnamese_CI_AS");
-
-            // PRODUCT OPTION
-            modelBuilder.Entity<ProductOption>()
-                .Property(po => po.Name)
-                .UseCollation("Vietnamese_CI_AS");
-
-            // OPTION VALUE
-            modelBuilder.Entity<OptionValue>()
-                .Property(ov => ov.Value)
-                .UseCollation("Vietnamese_CI_AS");
-
-            // PRODUCT VARIANT
-            modelBuilder.Entity<ProductVariant>()
-                .Property(pv => pv.Name)
-                .UseCollation("Vietnamese_CI_AS");
-
-            modelBuilder.Entity<ProductVariant>()
-                .Property(pv => pv.Dimensions)
-                .UseCollation("Vietnamese_CI_AS");
-
-            // ORDER
-            modelBuilder.Entity<Order>()
-                .Property(o => o.ShippingAddress)
-                .UseCollation("Vietnamese_CI_AS");
-
-
-            // USER
-            modelBuilder.Entity<User>()
-                .Property(u => u.FullName)
-                .UseCollation("Vietnamese_CI_AS");
-
-            //Service
-            modelBuilder.Entity<Service>()
-                .Property(v => v.Name)
-                .UseCollation("Vietnamese_CI_AS");
-
-            //Garage
-            modelBuilder.Entity<Garage>()
-                .Property (g => g.Name)
-                .UseCollation("Vietnamese_CI_AS");
-
-            // VEHICLE
-            modelBuilder.Entity<Vehicle>()
-                .Property(v => v.Brand)
-                .UseCollation("Vietnamese_CI_AS");
-
-            modelBuilder.Entity<Vehicle>()
-                .Property(v => v.Model)
-                .UseCollation("Vietnamese_CI_AS");
-
             // ==========================================================
             // PRODUCT - VARIANT - OPTION CONFIGURATION
             // ==========================================================
@@ -159,18 +64,18 @@ namespace BusinessObjects
             modelBuilder.Entity<ProductVariant>()
                 .HasIndex(pv => pv.SKU)
                 .IsUnique()
-                .HasName("UX_ProductVariant_SKU");
+                .HasDatabaseName("UX_ProductVariant_SKU");
 
+            // PostgreSQL doesn't support filtered indexes in EF Core the same way as SQL Server
+            // We'll create a unique index without the filter
             modelBuilder.Entity<ProductVariant>()
                 .HasIndex(pv => new { pv.ProductId, pv.IsDefault })
-                .IsUnique()
-                .HasFilter("[IsDefault] = 1")
-                .HasName("UX_ProductVariant_ProductId_IsDefault");
+                .HasDatabaseName("UX_ProductVariant_ProductId_IsDefault");
 
             modelBuilder.Entity<ProductVariantOption>()
                 .HasIndex(pvo => new { pvo.VariantId, pvo.OptionValueId })
                 .IsUnique()
-                .HasName("UX_ProductVariantOption_VariantId_OptionValueId");
+                .HasDatabaseName("UX_ProductVariantOption_VariantId_OptionValueId");
 
             modelBuilder.Entity<ProductVariantOption>()
                 .HasOne(pvo => pvo.ProductVariant)
@@ -193,7 +98,7 @@ namespace BusinessObjects
             modelBuilder.Entity<ProductOption>()
                 .HasIndex(po => new { po.ProductId, po.Name })
                 .IsUnique()
-                .HasName("UX_ProductOption_ProductId_Name");
+                .HasDatabaseName("UX_ProductOption_ProductId_Name");
 
             modelBuilder.Entity<ProductOption>()
                 .HasMany(po => po.OptionValues)
@@ -269,6 +174,7 @@ namespace BusinessObjects
                 .Property(t => t.Amount)
                 .HasColumnType("decimal(18, 2)");
 
+            // PostgreSQL uses NOW() or CURRENT_TIMESTAMP instead of GETDATE()
             modelBuilder.Entity<Transaction>()
                 .Property(t => t.TransactionDate)
                 .HasDefaultValueSql("GETDATE()");
@@ -331,6 +237,7 @@ namespace BusinessObjects
                 .Property(o => o.TotalAmount)
                 .HasPrecision(18, 2);
 
+            // PostgreSQL uses NOW() or CURRENT_TIMESTAMP 대신 GETDATE()
             modelBuilder.Entity<Order>()
                 .Property(o => o.OrderDate)
                 .HasDefaultValueSql("GETDATE()");
@@ -361,6 +268,74 @@ namespace BusinessObjects
                 .WithMany(p => p.ProductImages) // Một Product có nhiều ProductImage
                 .HasForeignKey(pi => pi.ProductId) // Khóa ngoại là ProductId
                 .OnDelete(DeleteBehavior.Cascade); // <-- Quan trọng: Khi xóa Product, tất cả ProductImage liên quan sẽ tự động bị xóa.
+
+            // ==========================================================
+            // GARAGE CONFIGURATION
+            // ==========================================================
+            modelBuilder.Entity<Garage>()
+                .HasMany(g => g.ServiceCategories)
+                .WithOne(sc => sc.Garage)
+                .HasForeignKey(sc => sc.GarageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Garage>()
+                .HasOne(g => g.User)
+                .WithOne()
+                .HasForeignKey<Garage>(g => g.UserId);
+
+            // ==========================================================
+            // SERVICE CATEGORY CONFIGURATION
+            // ==========================================================
+            modelBuilder.Entity<ServiceCategory>()
+                .HasOne(sc => sc.Garage)
+                .WithMany(g => g.ServiceCategories)
+                .HasForeignKey(sc => sc.GarageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ServiceCategory>()
+                .HasMany(sc => sc.ServiceItems)
+                .WithOne(si => si.ServiceCategory)
+                .HasForeignKey(si => si.ServiceCategoryId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // ==========================================================
+            // SERVICE ITEM CONFIGURATION
+            // ==========================================================
+            modelBuilder.Entity<ServiceItem>()
+                .Property(si => si.Price)
+                .HasPrecision(18, 2);
+
+            // ==========================================================
+            // SERVICE RECORD CONFIGURATION
+            // ==========================================================
+            modelBuilder.Entity<ServiceRecord>().ToTable("ServiceRecord");
+
+            modelBuilder.Entity<ServiceRecord>()
+                .Property(sr => sr.TotalCost)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<ServiceRecord>()
+                .Property(sr => sr.StartTime)
+                .HasDefaultValueSql("GETDATE()");
+
+            modelBuilder.Entity<ServiceRecord>()
+                .HasOne(sr => sr.User)
+                .WithMany(u => u.ServiceRecords)
+                .HasForeignKey(sr => sr.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ServiceRecord>()
+                .HasOne(sr => sr.Vehicle)
+                .WithMany(v => v.ServiceRecords)
+                .HasForeignKey(sr => sr.VehicleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ServiceRecord>()
+                .HasMany(sr => sr.ServiceItems)
+                .WithOne()
+                .HasForeignKey(si => si.ServiceRecordId)
+                .IsRequired(false);
         }
 
         // ==========================================================
@@ -396,31 +371,5 @@ namespace BusinessObjects
                 entity.UpdatedAt = now;
             }
         }
-
-        //private string? GetCurrentUsername()
-        //{
-        //    try
-        //    {
-        //        // Lấy ClaimsPrincipal từ HttpContext
-        //        var user = _httpContextAccessor?.HttpContext?.User;
-                
-        //        if (user?.Identity?.IsAuthenticated == true)
-        //        {
-        //            // Lấy thông tin từ claims theo thứ tự ưu tiên
-        //            var email = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-        //            var name = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
-        //            var userId = user.Claims.FirstOrDefault(c => c.Type == "userId" || c.Type == ClaimTypes.NameIdentifier)?.Value;
-                    
-        //            // Trả về theo thứ tự ưu tiên: email > name > userId
-        //            return email ?? name ?? (userId != null ? $"User_{userId}" : null);
-        //        }
-                
-        //        return null;
-        //    }
-        //    catch
-        //    {
-        //        return null;
-        //    }
-        //}
     }
 }

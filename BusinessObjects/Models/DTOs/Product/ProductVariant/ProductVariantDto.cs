@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BusinessObjects.Models.DTOs.Product
+namespace BusinessObjects.Models.DTOs.Product.ProductVariant
 {
     public class ProductVariantDto
     {
@@ -19,6 +19,7 @@ namespace BusinessObjects.Models.DTOs.Product
 
         // Giá bán mà khách hàng sẽ thấy
         public decimal Price { get; set; }
+        public decimal? CostPrice { get; set; }
 
         // Số lượng tồn kho có sẵn để bán
         public int StockQuantity { get; set; }
@@ -27,11 +28,13 @@ namespace BusinessObjects.Models.DTOs.Product
         // Cho frontend biết nên chọn sẵn biến thể này khi tải trang hay không
         public bool IsDefault { get; set; }
 
+        public bool IsActive { get; set; }
+
         // Gợi ý: Thêm thuộc tính này nếu mỗi biến thể có ảnh riêng
         // public string? Image { get; set; }
 
         // Đây là phần quan trọng nhất để liên kết với các lựa chọn của người dùng
         // Chứa danh sách các ID của OptionValue, vd: [1 (cho màu Đỏ), 5 (cho size M)]
-        public List<int> SelectedOptionValueIds { get; set; }
+        public virtual ICollection<ProductVariantOptionDto> ProductVariantOptions { get; set; }
     }
 }

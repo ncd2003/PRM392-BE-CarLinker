@@ -64,10 +64,10 @@ namespace Repositories
             return await _orderDAO.GetTotalRevenueAsync();
         }
 
-        public async Task<bool> UpdateOrderStatusWithTransaction(int orderId, OrderStatus newStatus)
-        {
-            return await _orderDAO.UpdateOrderStatusWithTransaction(orderId, newStatus);
-        }
+        //public async Task<bool> UpdateOrderStatusWithTransaction(int orderId, OrderStatus newStatus)
+        //{
+        //    return await _orderDAO.UpdateOrderStatusWithTransaction(orderId, newStatus);
+        //}
 
     }
 }

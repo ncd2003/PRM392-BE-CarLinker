@@ -367,10 +367,6 @@ namespace BusinessObjects.Migrations
                         .HasColumnType("nvarchar(max)")
                         .UseCollation("Vietnamese_CI_AS");
 
-                    b.Property<string>("Image")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -401,6 +397,37 @@ namespace BusinessObjects.Migrations
                     b.HasIndex("ManufacturerId");
 
                     b.ToTable("Product");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.ProductImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset?>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsFeatured")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductImage");
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.ProductOption", b =>
@@ -850,6 +877,17 @@ namespace BusinessObjects.Migrations
                     b.Navigation("Manufacturer");
                 });
 
+            modelBuilder.Entity("BusinessObjects.Models.ProductImage", b =>
+                {
+                    b.HasOne("BusinessObjects.Models.Product", "Product")
+                        .WithMany("ProductImages")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("BusinessObjects.Models.ProductOption", b =>
                 {
                     b.HasOne("BusinessObjects.Models.Product", "Product")
@@ -945,6 +983,8 @@ namespace BusinessObjects.Migrations
 
             modelBuilder.Entity("BusinessObjects.Models.Product", b =>
                 {
+                    b.Navigation("ProductImages");
+
                     b.Navigation("ProductOptions");
 
                     b.Navigation("ProductVariants");

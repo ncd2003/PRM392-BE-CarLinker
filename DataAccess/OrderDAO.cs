@@ -175,46 +175,118 @@ namespace DataAccess
 
         /// <summary>
         /// Cập nhật trạng thái của một đơn hàng (dùng cho Admin).
+        /// SỬA ĐỔI: Thêm logic xử lý Stock/Hold Quantity khi thay đổi trạng thái.
         /// </summary>
         public async Task UpdateOrderStatus(int orderId, OrderStatus newStatus)
         {
-            var order = await _context.Order.FirstOrDefaultAsync(o => o.Id == orderId);
-            if (order == null)
+            // BẮT BUỘC dùng transaction vì chúng ta cập nhật 2 bảng (Order và ProductVariant)
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
             {
-                throw new Exception("Không tìm thấy đơn hàng.");
-            }
+                var order = await _context.Order
+                    .Include(o => o.OrderItems) // <-- Tải các OrderItem đi kèm
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
 
-            // Kiểm tra luồng trạng thái hợp lệ
-            ValidateStatusTransition(order.Status, newStatus);
-
-            order.Status = newStatus;
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<bool> UpdateOrderStatusWithTransaction(int orderId, OrderStatus newStatus)
-        {
-            using (var transaction = await _context.Database.BeginTransactionAsync())
-            {
-                try
+                if (order == null)
                 {
-                    var order = await _context.Order.FirstOrDefaultAsync(o => o.Id == orderId);
-                    if (order == null)
+                    throw new Exception("Không tìm thấy đơn hàng.");
+                }
+
+                var currentStatus = order.Status;
+
+                // Nếu trạng thái không đổi thì không làm gì cả
+                if (currentStatus == newStatus)
+                {
+                    await transaction.CommitAsync(); // Vẫn commit để giải phóng transaction
+                    return;
+                }
+
+                // Kiểm tra luồng trạng thái hợp lệ
+                ValidateStatusTransition(currentStatus, newStatus);
+
+                // --- LOGIC MỚI: XỬ LÝ TỒN KHO DỰA TRÊN THAY ĐỔI TRẠNG THÁI ---
+
+                // Lấy danh sách các ProductVariant liên quan
+                var variantIds = order.OrderItems.Select(oi => oi.ProductVariantId).ToList();
+                var variantsToUpdate = await _context.ProductVariant
+                                            .Where(pv => variantIds.Contains(pv.Id))
+                                            .ToListAsync();
+
+                // 1. CHUYỂN SANG TRẠNG THÁI SHIPPING (XUẤT KHO)
+                if (newStatus == OrderStatus.SHIPPING && currentStatus != OrderStatus.SHIPPING)
+                {
+                    foreach (var item in order.OrderItems)
                     {
-                        throw new Exception("Order không tồn tại");
+                        var variant = variantsToUpdate.FirstOrDefault(v => v.Id == item.ProductVariantId);
+                        if (variant != null)
+                        {
+                            // Trừ tồn kho thực tế
+                            variant.StockQuantity -= item.Quantity;
+                            // Trừ hàng tạm giữ
+                            variant.HoldQuantity -= item.Quantity;
+
+                            // Đảm bảo không bị âm
+                            if (variant.StockQuantity < 0) variant.StockQuantity = 0;
+                            if (variant.HoldQuantity < 0) variant.HoldQuantity = 0;
+                        }
                     }
-
-                    ValidateStatusTransition(order.Status, newStatus);
-                    order.Status = newStatus;
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-
-                    return true;
                 }
-                catch (Exception ex)
+
+                // 2. CHUYỂN SANG TRẠNG THÁI FAILED (TỪ SHIPPING) (NHẬP LẠI KHO)
+                else if (newStatus == OrderStatus.FAILED && currentStatus == OrderStatus.SHIPPING)
                 {
-                    await transaction.RollbackAsync();
-                    throw;
+                    foreach (var item in order.OrderItems)
+                    {
+                        var variant = variantsToUpdate.FirstOrDefault(v => v.Id == item.ProductVariantId);
+                        if (variant != null)
+                        {
+                            // Cộng lại tồn kho
+                            variant.StockQuantity += item.Quantity;
+                            // HoldQuantity không đổi (đã bị trừ khi shipping)
+                        }
+                    }
                 }
+
+                // 3. QUAY LẠI TRẠNG THÁI PACKED (TỪ SHIPPING) (NHẬP LẠI KHO VÀ TẠM GIỮ LẠI)
+                else if (newStatus == OrderStatus.PACKED && currentStatus == OrderStatus.SHIPPING)
+                {
+                    foreach (var item in order.OrderItems)
+                    {
+                        var variant = variantsToUpdate.FirstOrDefault(v => v.Id == item.ProductVariantId);
+                        if (variant != null)
+                        {
+                            // Cộng lại tồn kho
+                            variant.StockQuantity += item.Quantity;
+                            // Cộng lại hàng tạm giữ
+                            variant.HoldQuantity += item.Quantity;
+                        }
+                    }
+                }
+
+                // Cập nhật các biến thể sản phẩm nếu có thay đổi
+                if (variantsToUpdate.Any())
+                {
+                    _context.ProductVariant.UpdateRange(variantsToUpdate);
+                }
+
+                // --- KẾT THÚC LOGIC MỚI ---
+
+                // Cập nhật trạng thái đơn hàng
+                order.Status = newStatus;
+
+                // Lưu tất cả thay đổi (cả Order và ProductVariant)
+                await _context.SaveChangesAsync();
+
+                // Commit transaction
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                // Nếu có lỗi, rollback tất cả
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Lỗi khi cập nhật trạng thái đơn hàng {OrderId} sang {NewStatus}", orderId, newStatus);
+                throw; // Ném lỗi ra ngoài
             }
         }
 

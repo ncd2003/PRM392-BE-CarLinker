@@ -2,6 +2,9 @@
 using BusinessObjects.Models.DTOs.Cart;
 using BusinessObjects.Models.DTOs.Order;
 using BusinessObjects.Models.DTOs.Product;
+using BusinessObjects.Models.DTOs.Product.OptionValue;
+using BusinessObjects.Models.DTOs.Product.ProductOption;
+using BusinessObjects.Models.DTOs.Product.ProductVariant;
 using BusinessObjects.Models.DTOs.Vehicle;
 using Mapster;
 using TheVehicleEcosystemAPI.Response.DTOs;

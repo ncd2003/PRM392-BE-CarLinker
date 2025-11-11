@@ -28,6 +28,6 @@ namespace Repositories
 
         Task<decimal> GetTotalRevenueAsync();
 
-        Task<bool> UpdateOrderStatusWithTransaction(int orderId, OrderStatus newStatus);
+        //Task<bool> UpdateOrderStatusWithTransaction(int orderId, OrderStatus newStatus);
     }
 }

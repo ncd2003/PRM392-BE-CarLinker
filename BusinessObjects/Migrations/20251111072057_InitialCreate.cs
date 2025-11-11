@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BusinessObjects.Migrations
 {
     /// <inheritdoc />
-    public partial class TenMigration : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -137,7 +137,6 @@ namespace BusinessObjects.Migrations
                     BrandId = table.Column<int>(type: "int", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false, collation: "Vietnamese_CI_AS"),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: true, collation: "Vietnamese_CI_AS"),
-                    Image = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     WarrantyPeriod = table.Column<int>(type: "int", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     IsFeatured = table.Column<bool>(type: "bit", nullable: false),
@@ -265,6 +264,29 @@ namespace BusinessObjects.Migrations
                         name: "FK_Vehicle_User_UserId",
                         column: x => x.UserId,
                         principalTable: "User",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductImage",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ProductId = table.Column<int>(type: "int", nullable: false),
+                    IsFeatured = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductImage", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductImage_Product_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Product",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -484,6 +506,11 @@ namespace BusinessObjects.Migrations
                 column: "ManufacturerId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ProductImage_ProductId",
+                table: "ProductImage",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
                 name: "UX_ProductOption_ProductId_Name",
                 table: "ProductOption",
                 columns: new[] { "ProductId", "Name" },
@@ -555,6 +582,9 @@ namespace BusinessObjects.Migrations
 
             migrationBuilder.DropTable(
                 name: "OrderItem");
+
+            migrationBuilder.DropTable(
+                name: "ProductImage");
 
             migrationBuilder.DropTable(
                 name: "ProductVariantOption");

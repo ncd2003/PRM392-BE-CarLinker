@@ -3,14 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace BusinessObjects.Models
 {
-    public class User : BaseModel
+    public class GarageStaff
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -33,18 +32,12 @@ namespace BusinessObjects.Models
         public string? Image { get; set; }
 
         [MaxLength(50)]
-        public RoleUser UserRole { get; set; } = RoleUser.CUSTOMER;
+        public RoleGarage GarageRole { get; set; } = RoleGarage.STAFF;
         public UserStatus UserStatus { get; set; } = UserStatus.ACTIVE;
 
         [MaxLength(500)]
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiryTime { get; set; }
         public bool IsActive { get; set; } = true;
-
-        public virtual ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();
-        public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
-        public virtual Cart Cart { get; set; }
-        public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
-        public virtual ICollection<ServiceRecord> ServiceRecords { get; set; } = new List<ServiceRecord>();
     }
 }

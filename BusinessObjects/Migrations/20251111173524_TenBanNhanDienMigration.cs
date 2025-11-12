@@ -67,6 +67,22 @@ namespace BusinessObjects.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ServiceCategory",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ServiceCategory", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "User",
                 columns: table => new
                 {
@@ -320,29 +336,6 @@ namespace BusinessObjects.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ServiceCategory",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    GarageId = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ServiceCategory", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ServiceCategory_Garage_GarageId",
-                        column: x => x.GarageId,
-                        principalTable: "Garage",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "ServiceRecord",
                 columns: table => new
                 {
@@ -353,6 +346,8 @@ namespace BusinessObjects.Migrations
                     StartTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
                     EndTime = table.Column<DateTime>(type: "datetime2", nullable: true),
                     UserId = table.Column<int>(type: "int", nullable: false),
+                    StaffId = table.Column<int>(type: "int", nullable: true),
+                    GarageId = table.Column<int>(type: "int", nullable: false),
                     VehicleId = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
@@ -360,6 +355,17 @@ namespace BusinessObjects.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ServiceRecord", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ServiceRecord_Garage_GarageId",
+                        column: x => x.GarageId,
+                        principalTable: "Garage",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ServiceRecord_User_StaffId",
+                        column: x => x.StaffId,
+                        principalTable: "User",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_ServiceRecord_User_UserId",
                         column: x => x.UserId,
@@ -461,7 +467,6 @@ namespace BusinessObjects.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Price = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     ServiceCategoryId = table.Column<int>(type: "int", nullable: true),
                     ServiceRecordId = table.Column<int>(type: "int", nullable: true),
@@ -510,6 +515,32 @@ namespace BusinessObjects.Migrations
                         principalColumn: "Id");
                 });
 
+            migrationBuilder.CreateTable(
+                name: "GarageServiceItem",
+                columns: table => new
+                {
+                    GarageId = table.Column<int>(type: "int", nullable: false),
+                    ServiceItemId = table.Column<int>(type: "int", nullable: false),
+                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GarageServiceItem", x => new { x.GarageId, x.ServiceItemId });
+                    table.ForeignKey(
+                        name: "FK_GarageServiceItem_Garage_GarageId",
+                        column: x => x.GarageId,
+                        principalTable: "Garage",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_GarageServiceItem_ServiceItem_ServiceItemId",
+                        column: x => x.ServiceItemId,
+                        principalTable: "ServiceItem",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Cart_UserId",
                 table: "Cart",
@@ -532,6 +563,11 @@ namespace BusinessObjects.Migrations
                 table: "Garage",
                 column: "UserId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_GarageServiceItem_ServiceItemId",
+                table: "GarageServiceItem",
+                column: "ServiceItemId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OptionValue_OptionId",
@@ -598,11 +634,6 @@ namespace BusinessObjects.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ServiceCategory_GarageId",
-                table: "ServiceCategory",
-                column: "GarageId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ServiceItem_ServiceCategoryId",
                 table: "ServiceItem",
                 column: "ServiceCategoryId");
@@ -611,6 +642,16 @@ namespace BusinessObjects.Migrations
                 name: "IX_ServiceItem_ServiceRecordId",
                 table: "ServiceItem",
                 column: "ServiceRecordId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ServiceRecord_GarageId",
+                table: "ServiceRecord",
+                column: "GarageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ServiceRecord_StaffId",
+                table: "ServiceRecord",
+                column: "StaffId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ServiceRecord_UserId",
@@ -659,19 +700,22 @@ namespace BusinessObjects.Migrations
                 name: "CartItem");
 
             migrationBuilder.DropTable(
+                name: "GarageServiceItem");
+
+            migrationBuilder.DropTable(
                 name: "OrderItem");
 
             migrationBuilder.DropTable(
                 name: "ProductVariantOption");
 
             migrationBuilder.DropTable(
-                name: "ServiceItem");
-
-            migrationBuilder.DropTable(
                 name: "Transaction");
 
             migrationBuilder.DropTable(
                 name: "Cart");
+
+            migrationBuilder.DropTable(
+                name: "ServiceItem");
 
             migrationBuilder.DropTable(
                 name: "Order");

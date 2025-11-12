@@ -14,16 +14,9 @@ namespace BusinessObjects.Models
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-
         [Required]
         public string Name { get; set; }
-
         public bool IsActive { get; set; } = true;
-
-        [Required]
-        [ForeignKey(nameof(Garage))]
-        public int GarageId { get; set; }
-        public virtual Garage Garage { get; set; } = default!;
         public virtual ICollection<ServiceItem> ServiceItems { get; set; } = new List<ServiceItem>();
     }
 }

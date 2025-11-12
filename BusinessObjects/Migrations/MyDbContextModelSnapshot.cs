@@ -207,6 +207,27 @@ namespace BusinessObjects.Migrations
                     b.ToTable("Garage");
                 });
 
+            modelBuilder.Entity("BusinessObjects.Models.GarageServiceItem", b =>
+                {
+                    b.Property<int>("GarageId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ServiceItemId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("GarageId", "ServiceItemId");
+
+                    b.HasIndex("ServiceItemId");
+
+                    b.ToTable("GarageServiceItem");
+                });
+
             modelBuilder.Entity("BusinessObjects.Models.Manufacturer", b =>
                 {
                     b.Property<int>("Id")
@@ -565,9 +586,6 @@ namespace BusinessObjects.Migrations
                     b.Property<DateTimeOffset?>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<int>("GarageId")
-                        .HasColumnType("int");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -579,8 +597,6 @@ namespace BusinessObjects.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("GarageId");
 
                     b.ToTable("ServiceCategory");
                 });
@@ -602,10 +618,6 @@ namespace BusinessObjects.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Price")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int?>("ServiceCategoryId")
                         .HasColumnType("int");
@@ -639,7 +651,13 @@ namespace BusinessObjects.Migrations
                     b.Property<DateTime?>("EndTime")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("GarageId")
+                        .HasColumnType("int");
+
                     b.Property<int>("ServiceRecordStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("StaffId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("StartTime")
@@ -661,6 +679,10 @@ namespace BusinessObjects.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("GarageId");
+
+                    b.HasIndex("StaffId");
 
                     b.HasIndex("UserId");
 
@@ -880,6 +902,25 @@ namespace BusinessObjects.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("BusinessObjects.Models.GarageServiceItem", b =>
+                {
+                    b.HasOne("BusinessObjects.Models.Garage", "Garage")
+                        .WithMany("GarageServiceItems")
+                        .HasForeignKey("GarageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BusinessObjects.Models.ServiceItem", "ServiceItem")
+                        .WithMany("GarageServiceItems")
+                        .HasForeignKey("ServiceItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Garage");
+
+                    b.Navigation("ServiceItem");
+                });
+
             modelBuilder.Entity("BusinessObjects.Models.OptionValue", b =>
                 {
                     b.HasOne("BusinessObjects.Models.ProductOption", "ProductOption")
@@ -988,17 +1029,6 @@ namespace BusinessObjects.Migrations
                     b.Navigation("ProductVariant");
                 });
 
-            modelBuilder.Entity("BusinessObjects.Models.ServiceCategory", b =>
-                {
-                    b.HasOne("BusinessObjects.Models.Garage", "Garage")
-                        .WithMany("ServiceCategories")
-                        .HasForeignKey("GarageId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Garage");
-                });
-
             modelBuilder.Entity("BusinessObjects.Models.ServiceItem", b =>
                 {
                     b.HasOne("BusinessObjects.Models.ServiceCategory", "ServiceCategory")
@@ -1015,6 +1045,16 @@ namespace BusinessObjects.Migrations
 
             modelBuilder.Entity("BusinessObjects.Models.ServiceRecord", b =>
                 {
+                    b.HasOne("BusinessObjects.Models.Garage", "Garage")
+                        .WithMany("ServiceRecords")
+                        .HasForeignKey("GarageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BusinessObjects.Models.User", "Staff")
+                        .WithMany()
+                        .HasForeignKey("StaffId");
+
                     b.HasOne("BusinessObjects.Models.User", "User")
                         .WithMany("ServiceRecords")
                         .HasForeignKey("UserId")
@@ -1026,6 +1066,10 @@ namespace BusinessObjects.Migrations
                         .HasForeignKey("VehicleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Garage");
+
+                    b.Navigation("Staff");
 
                     b.Navigation("User");
 
@@ -1071,7 +1115,9 @@ namespace BusinessObjects.Migrations
 
             modelBuilder.Entity("BusinessObjects.Models.Garage", b =>
                 {
-                    b.Navigation("ServiceCategories");
+                    b.Navigation("GarageServiceItems");
+
+                    b.Navigation("ServiceRecords");
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.Manufacturer", b =>
@@ -1113,6 +1159,11 @@ namespace BusinessObjects.Migrations
             modelBuilder.Entity("BusinessObjects.Models.ServiceCategory", b =>
                 {
                     b.Navigation("ServiceItems");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.ServiceItem", b =>
+                {
+                    b.Navigation("GarageServiceItems");
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.ServiceRecord", b =>

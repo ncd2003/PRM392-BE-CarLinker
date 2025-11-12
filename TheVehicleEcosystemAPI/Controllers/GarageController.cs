@@ -1,5 +1,8 @@
-﻿using BusinessObjects.Models;
+﻿using Azure;
+using BusinessObjects.Models;
 using BusinessObjects.Models.DTOs.Garage;
+using BusinessObjects.Models.DTOs.ServiceCategory;
+using BusinessObjects.Models.DTOs.ServiceItem;
 using BusinessObjects.Models.DTOs.ServiceRecord;
 using DataAccess;
 using Mapster;
@@ -18,15 +21,18 @@ namespace TheVehicleEcosystemAPI.Controllers
     public class GarageController : ControllerBase
     {
         private readonly IGarageRepository _garageRepository;
+        private readonly IServiceItemRepository _serviceItemRepository;
         private readonly ILogger<VehicleController> _logger;
         private readonly CloudflareR2Storage _r2Storage;
 
         public GarageController(
             IGarageRepository garageRepository,
+            IServiceItemRepository serviceItemRepository,
             ILogger<VehicleController> logger,
             CloudflareR2Storage r2Storage)
         {
             _garageRepository = garageRepository;
+            _serviceItemRepository = serviceItemRepository;
             _logger = logger;
             _r2Storage = r2Storage;
         }
@@ -47,7 +53,7 @@ namespace TheVehicleEcosystemAPI.Controllers
                 var (items, total) = await _garageRepository.GetAllAsync(page, size, sortBy, isAsc);
                 var garageDtos = items.Select(g => g.Adapt<GarageDto>());
                 var paginatedData = new PaginatedData<GarageDto>(garageDtos, total, page, size);
-                var response = ApiResponse<PaginatedData<GarageDto>>.Success("Lấy danh sách gara thành công",paginatedData);
+                var response = ApiResponse<PaginatedData<GarageDto>>.Success("Lấy danh sách gara thành công", paginatedData);
                 return Ok(response);
             }
             catch (ArgumentException ex)
@@ -62,8 +68,36 @@ namespace TheVehicleEcosystemAPI.Controllers
                 return StatusCode(500, response);
             }
         }
+
+        [HttpGet("{id}")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ApiResponse<GarageDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<Garage>>> GetGarageById(int id)
+        {
+            try
+            {
+                var garageDB = await _garageRepository.GetByIdAsync(id);
+                var garageDto = garageDB.Adapt<GarageDto>();
+                var response = ApiResponse<GarageDto>.Success("Lấy gara thành công", garageDto);
+                return Ok(response);
+            }
+            catch (ArgumentException ex)
+            {
+                var response = ApiResponse<object>.BadRequest(ex.Message);
+                return BadRequest(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting garage");
+                var response = ApiResponse<object>.InternalError("Lỗi khi lấy gara");
+                return StatusCode(500, response);
+            }
+        }
+
         [HttpPost]
-        [Authorize(Roles = "OWNER")]
+        [Authorize(Roles = "GARAGE")]
         [ProducesResponseType(typeof(ApiResponse<GarageCreateDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
@@ -113,13 +147,13 @@ namespace TheVehicleEcosystemAPI.Controllers
             }
         }
 
-        [HttpPatch("{id}")]
-        [Authorize(Roles = "OWNER")]
+        [HttpPatch]
+        [Authorize(Roles = "GARAGE")]
         [ProducesResponseType(typeof(ApiResponse<GarageUpdateDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<GarageUpdateDto>>> UpdateGarage(int id, [FromForm] GarageUpdateDto garageUpdateDto, IFormFile? imageFile)
+        public async Task<ActionResult<ApiResponse<GarageUpdateDto>>> UpdateGarage([FromForm] GarageUpdateDto garageUpdateDto, IFormFile? imageFile)
         {
             try
             {
@@ -130,7 +164,7 @@ namespace TheVehicleEcosystemAPI.Controllers
                 }
 
                 // Get existing garage first
-                var garageDB = await _garageRepository.GetByIdAsync(id);
+                var garageDB = await _garageRepository.GetByUserIdAsync(UserContextHelper.GetUserId(User).Value);
                 if (garageDB == null)
                 {
                     var notFoundResponse = ApiResponse<object>.NotFound("Không tìm thấy gara}");
@@ -164,7 +198,6 @@ namespace TheVehicleEcosystemAPI.Controllers
 
                 // Map DTO to entity
                 garageUpdateDto.Adapt(garageDB);
-                garageDB.UserId = UserContextHelper.GetUserId(User).Value;
                 garageDB.Image = imageUrl ?? string.Empty;
 
                 await _garageRepository.UpdateAsync(garageDB);
@@ -185,6 +218,145 @@ namespace TheVehicleEcosystemAPI.Controllers
                 _logger.LogError(ex, "Error updating garage");
                 var response = ApiResponse<object>.InternalError("Lỗi khi cập nhật gara");
                 return StatusCode(500, response);
+            }
+        }
+
+        [HttpPatch("service-items")]
+        [Authorize(Roles = "GARAGE")]
+        [ProducesResponseType(typeof(ApiResponse<GarageUpdateServiceItem>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<GarageUpdateServiceItem>>> UpdateGarageServiceItems([FromBody] List<GarageUpdateServiceItem> garageUpdateServiceItem)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    var response = ApiResponse<object>.BadRequest("Dữ liệu không hợp lệ");
+                    return BadRequest(response);
+                }
+
+                // Get existing garage first
+                Garage garageDB = await _garageRepository.GetByUserIdAsync(UserContextHelper.GetUserId(User).Value);
+
+                if (garageDB == null)
+                {
+                    return NotFound(ApiResponse<object>.NotFound("Không tìm thấy gara"));
+                }
+
+                ICollection<GarageServiceItem> garageServiceItems = new List<GarageServiceItem>();
+                foreach (var gsi in garageUpdateServiceItem)
+                {
+                    ServiceItem serviceItemDB = await _serviceItemRepository.GetByIdAsync(gsi.ServiceItemId);
+                    if (serviceItemDB == null)
+                    {
+                        return NotFound(ApiResponse<object>.NotFound($"Service Item với ID {gsi.ServiceItemId} không tồn tại"));
+                    }
+                    GarageServiceItem garageServiceItem = new GarageServiceItem()
+                    {
+                        GarageId = garageDB.Id,
+                        ServiceItemId = gsi.ServiceItemId,
+                        Price = gsi.Price,
+                    };
+                    garageServiceItems.Add(garageServiceItem);
+                }
+
+                garageDB.GarageServiceItems.Clear();
+                foreach (var item in garageServiceItems)
+                {
+                    garageDB.GarageServiceItems.Add(item);
+                }
+
+                await _garageRepository.UpdateAsync(garageDB);
+                return Ok(ApiResponse<GarageUpdateServiceItem>.Success("Cập nhật dịch vụ gara thành công"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                var response = ApiResponse<object>.NotFound(ex.Message);
+                return NotFound(response);
+            }
+            catch (ArgumentException ex)
+            {
+                var response = ApiResponse<object>.BadRequest(ex.Message);
+                return BadRequest(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating garage service items");
+                var response = ApiResponse<object>.InternalError("Lỗi khi cập nhật dịch vụ gara");
+                return StatusCode(500, response);
+            }
+        }
+
+        [HttpGet("details/{garageId}")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ApiResponse<GarageDetailDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<GarageDetailDto>>> GetGarageDetails(int garageId)
+        {
+            try
+            {
+                var garageDB = await _garageRepository.GetByIdAsync(garageId);
+                if (garageDB == null)
+                {
+                    return NotFound(ApiResponse<object>.NotFound($"Không tìm thấy gara với ID {garageId}"));
+                }
+
+                _logger.LogInformation("Garage {GarageId} has {Count} GarageServiceItems",
+                    garageId, garageDB.GarageServiceItems.Count);
+
+                _logger.LogInformation("Active GarageServiceItems: {Count}",
+                    garageDB.GarageServiceItems.Count(gsi => gsi.IsActive));
+
+                // Create GarageDetailDto
+                var garageDetailDto = new GarageDetailDto
+                {
+                    GarageDto = garageDB.Adapt<GarageDto>(),
+                    TotalServiceItems = garageDB.GarageServiceItems.Count(gsi => gsi.IsActive)
+                };
+
+                // Group service items by category
+                var groupedByCategory = garageDB.GarageServiceItems
+                    .Where(gsi => gsi.IsActive && gsi.ServiceItem != null)
+                    .GroupBy(gsi => new
+                    {
+                        CategoryId = gsi.ServiceItem.ServiceCategoryId ?? 0,
+                        CategoryName = gsi.ServiceItem.ServiceCategory?.Name ?? "Không phân loại"
+                    });
+
+                // Build ServiceCategoryDto list
+                foreach (var group in groupedByCategory)
+                {
+                    var serviceCategoryDto = new ServiceCategoryDto
+                    {
+                        Id = group.Key.CategoryId,
+                        Name = group.Key.CategoryName,
+                        ServiceItems = group.Select(gsi => new ServiceItemDto
+                        {
+                            Id = gsi.ServiceItemId,
+                            Name = gsi.ServiceItem.Name,
+                            Price = gsi.Price  // Price from GarageServiceItem (specific to this garage)
+                        }).ToList()
+                    };
+
+                    garageDetailDto.ServiceCategories.Add(serviceCategoryDto);
+                }
+
+                // Sort categories by name
+                garageDetailDto.ServiceCategories = garageDetailDto.ServiceCategories
+                    .OrderBy(cat => cat.Name)
+                    .ToList();
+
+                return Ok(ApiResponse<GarageDetailDto>.Success(
+                    "Lấy thông tin chi tiết gara thành công",
+                    garageDetailDto));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting garage details for garage {GarageId}", garageId);
+                return StatusCode(500, ApiResponse<object>.InternalError("Lỗi khi lấy thông tin chi tiết gara"));
             }
         }
     }

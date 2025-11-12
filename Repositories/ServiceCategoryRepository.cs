@@ -1,7 +1,9 @@
-﻿using BusinessObjects.Models;
+﻿using Azure;
+using BusinessObjects.Models;
 using DataAccess;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,7 +29,6 @@ namespace Repositories
             string? sortBy = null,
             bool isAsc = true)
         {
-            // Validate pagination parameters
             if (page <= 0)
                 throw new ArgumentException("Page must be greater than 0", nameof(page));
 
@@ -101,5 +102,6 @@ namespace Repositories
             serviceCategoryDB.IsActive = false;
             await _serviceCategoryDAO.Delete(serviceCategoryDB);
         }
+
     }
 }

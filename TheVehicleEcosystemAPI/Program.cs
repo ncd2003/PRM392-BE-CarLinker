@@ -187,7 +187,7 @@ Example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
                 });
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
             app.UseCors("AllowAll");
 

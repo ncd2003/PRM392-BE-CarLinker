@@ -9,7 +9,6 @@ namespace Repositories
 {
     public interface IServiceCategoryRepository
     {
-        Task<IEnumerable<ServiceCategory>> GetAllAsync();
         Task<(IEnumerable<ServiceCategory> items, int total)> GetAllAsync(
             int page,
             int pageSize,

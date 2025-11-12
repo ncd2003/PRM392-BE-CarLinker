@@ -25,7 +25,14 @@ namespace Repositories
             {
                 throw new ArgumentNullException(nameof(serviceRecord), "ServiceRecord cannot be null");
             }
-            serviceRecord.TotalCost = _serviceItemDAO.TotalPriceByIds(serviceRecord.ServiceItems.Select(si => si.Id).ToList()).Result;
+            
+            // Calculate total cost from GarageServiceItem prices
+            if (serviceRecord.ServiceItems != null && serviceRecord.ServiceItems.Any())
+            {
+                var serviceItemIds = serviceRecord.ServiceItems.Select(si => si.Id).ToList();
+                serviceRecord.TotalCost = await _serviceItemDAO.TotalPriceByGarageServiceItems(serviceRecord.GarageId, serviceItemIds);
+            }
+            
             await _serviceRecordDAO.Add(serviceRecord);
         }
 

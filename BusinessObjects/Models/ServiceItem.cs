@@ -16,21 +16,15 @@ namespace BusinessObjects.Models
 
         [Required]
         public required string Name { get; set; }
-
-        [Required]
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal Price { get; set; }
-
         public bool IsActive { get; set; } = true;
 
-        public int? ServiceCategoryId { get; set; }
-
         [ForeignKey(nameof(ServiceCategoryId))]
+        public int? ServiceCategoryId { get; set; }
         public virtual ServiceCategory? ServiceCategory { get; set; } = default!;
+
+        public ICollection<GarageServiceItem> GarageServiceItems { get; set; } = new List<GarageServiceItem>();
 
         public int? ServiceRecordId { get; set; }
 
-        //[ForeignKey(nameof(ServiceRecordId))]
-        //public virtual ServiceRecord? ServiceRecord { get; set; } = default!;
     }
 }

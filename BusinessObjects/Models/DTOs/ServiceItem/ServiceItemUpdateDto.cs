@@ -11,6 +11,5 @@ namespace BusinessObjects.Models.DTOs.ServiceItem
     public class ServiceItemUpdateDto
     {
         public string? Name { get; set; }
-        public decimal? Price { get; set; }
     }
 }

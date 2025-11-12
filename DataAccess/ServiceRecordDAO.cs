@@ -27,6 +27,7 @@ namespace DataAccess
                 .AsSplitQuery()
                 .Include(sr => sr.User)
                 .Include(sr => sr.Vehicle)
+                .Include(sr => sr.Garage)
                 .Include(sr => sr.ServiceItems)
                 .AsQueryable();
 
@@ -65,6 +66,7 @@ namespace DataAccess
                 .AsSplitQuery()
                 .Include(sr => sr.User)
                 .Include(sr => sr.Vehicle)
+                .Include(sr => sr.Garage)
                 .Include(sr => sr.ServiceItems)
                 .Where(sr => sr.UserId == userId)
                 .AsQueryable();
@@ -112,6 +114,7 @@ namespace DataAccess
             return await _context.ServiceRecord
                 .Include(sr => sr.User)
                 .Include(sr => sr.Vehicle)
+                .Include(sr => sr.Garage)
                 .Include(sr => sr.ServiceItems) 
                 .FirstOrDefaultAsync(s => s.Id == id);
         }

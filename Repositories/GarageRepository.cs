@@ -71,6 +71,15 @@ namespace Repositories
             return await _garageDAO.GetById(id);
         }
 
+        public async Task<List<ServiceItem>> GetServiceItemsByGarageIdAsync(int garageId)
+        {
+            return await _garageDAO.GetServiceItemsByGarageId(garageId);
+        }
+
+        public async Task<List<ServiceRecord>> GetBookingsByGarageIdAndDateAsync(int garageId, DateTime date)
+        {
+            return await _garageDAO.GetBookingsByGarageIdAndDate(garageId, date);
+        }
 
         public async Task DeleteAsync(int id)
         {

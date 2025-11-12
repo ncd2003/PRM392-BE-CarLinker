@@ -332,6 +332,12 @@ namespace BusinessObjects
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<ServiceRecord>()
+                .HasOne(sr => sr.Garage)
+                .WithMany(g => g.ServiceRecords)
+                .HasForeignKey(sr => sr.GarageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ServiceRecord>()
                 .HasMany(sr => sr.ServiceItems)
                 .WithOne()
                 .HasForeignKey(si => si.ServiceRecordId)

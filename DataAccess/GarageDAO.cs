@@ -64,8 +64,32 @@ namespace DataAccess
         }
         public async Task<Garage?> GetById(int id)
         {
-            return await _context.Garage.FirstOrDefaultAsync(g => g.Id == id && g.IsActive);
+            return await _context.Garage
+                .Include(g => g.ServiceCategories)
+                    .ThenInclude(sc => sc.ServiceItems)
+                .FirstOrDefaultAsync(g => g.Id == id && g.IsActive);
+        }
 
+        public async Task<List<ServiceItem>> GetServiceItemsByGarageId(int garageId)
+        {
+            return await _context.ServiceItem
+                .Where(si => si.ServiceCategory != null && 
+                            si.ServiceCategory.GarageId == garageId && 
+                            si.IsActive)
+                .ToListAsync();
+        }
+
+        public async Task<List<ServiceRecord>> GetBookingsByGarageIdAndDate(int garageId, DateTime date)
+        {
+            var startOfDay = date.Date;
+            var endOfDay = startOfDay.AddDays(1);
+
+            return await _context.ServiceRecord
+                .Where(sr => sr.GarageId == garageId &&
+                            sr.StartTime >= startOfDay &&
+                            sr.StartTime < endOfDay &&
+                            sr.ServiceRecordStatus != BusinessObjects.Models.Type.ServiceRecordStatus.CANCELLED)
+                .ToListAsync();
         }
 
         public async Task Update(Garage garage)

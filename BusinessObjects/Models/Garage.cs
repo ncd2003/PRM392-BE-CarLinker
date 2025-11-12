@@ -34,6 +34,7 @@ namespace BusinessObjects.Models
         public string Longitude { get; set; }
 
         public bool IsActive { get; set; } = true;
+        public bool AcceptingBookings { get; set; } = true;
 
         public int UserId { get; set; }
 
@@ -42,5 +43,6 @@ namespace BusinessObjects.Models
 
         // Navigation Properties
         public virtual ICollection<ServiceCategory> ServiceCategories { get; set; } = new List<ServiceCategory>();
+        public virtual ICollection<ServiceRecord> ServiceRecords { get; set; } = new List<ServiceRecord>();
     }
 }

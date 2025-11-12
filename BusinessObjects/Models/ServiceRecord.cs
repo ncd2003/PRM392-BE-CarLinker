@@ -36,6 +36,12 @@ namespace BusinessObjects.Models
         [ForeignKey(nameof(Vehicle))]
         public int VehicleId { get; set; }
         public virtual Vehicle Vehicle { get; set; } = default!;
+
+        [Required]
+        [ForeignKey(nameof(Garage))]
+        public int GarageId { get; set; }
+        public virtual Garage Garage { get; set; } = default!;
+
         public virtual ICollection<ServiceItem> ServiceItems { get; set; } = new List<ServiceItem>();
     }
 }

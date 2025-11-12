@@ -18,6 +18,7 @@ namespace BusinessObjects
         public DbSet<ProductVariant> ProductVariant { get; set; }
         public DbSet<ProductVariantOption> ProductVariantOption { get; set; }
         public DbSet<Garage> Garage { get; set; }
+        public DbSet<GarageStaff> GarageStaff { get; set; }
         public DbSet<ServiceCategory> ServiceCategory { get; set; }
         public DbSet<ServiceItem> ServiceItem { get; set; }
         public DbSet<ServiceRecord> ServiceRecord { get; set; }
@@ -275,6 +276,30 @@ namespace BusinessObjects
                 .HasMany(g => g.ServiceRecords)
                 .WithOne(sr => sr.Garage)
                 .HasForeignKey(sr => sr.GarageId);
+
+            modelBuilder.Entity<Garage>()
+                .HasMany(g => g.GarageStaffs)
+                .WithOne(gs => gs.Garage)
+                .HasForeignKey(gs => gs.GarageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ==========================================================
+            // GARAGE STAFF CONFIGURATION
+            // ==========================================================
+            modelBuilder.Entity<GarageStaff>().ToTable("GarageStaff");
+
+            modelBuilder.Entity<GarageStaff>()
+                .HasIndex(gs => gs.Email)
+                .IsUnique()
+                .HasDatabaseName("UX_GarageStaff_Email");
+
+            modelBuilder.Entity<GarageStaff>()
+                .HasIndex(gs => gs.PhoneNumber)
+                .HasDatabaseName("IX_GarageStaff_PhoneNumber");
+
+            modelBuilder.Entity<GarageStaff>()
+                .HasIndex(gs => new { gs.GarageId, gs.IsActive })
+                .HasDatabaseName("IX_GarageStaff_GarageId_IsActive");
 
             // ==========================================================
             // SERVICE CATEGORY CONFIGURATION

@@ -17,15 +17,21 @@ namespace TheVehicleEcosystemAPI.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IUserRepository _userRepository;
+        private readonly IGarageRepository _garageRepository;
+        private readonly IGarageStaffRepository _garageStaffRepository;
         private readonly JWTConfiguration _jwtConfiguration;
         private readonly ILogger<AuthController> _logger;
 
         public AuthController(
             IUserRepository userRepository,
+            IGarageRepository garageRepository,
+            IGarageStaffRepository garageStaffRepository,
             JWTConfiguration jwtConfiguration,
             ILogger<AuthController> logger)
         {
             _userRepository = userRepository;
+            _garageRepository = garageRepository;
+            _garageStaffRepository = garageStaffRepository;
             _jwtConfiguration = jwtConfiguration;
             _logger = logger;
         }
@@ -91,6 +97,115 @@ namespace TheVehicleEcosystemAPI.Controllers
             {
                 _logger.LogError(ex, "Error during registration");
                 return StatusCode(500, ApiResponse<object>.InternalError("Lỗi khi đăng ký tài khoản"));
+            }
+        }
+
+        /// <summary>
+        /// Đăng ký tài khoản partner (Garage Owner)
+        /// Tạo User với role GARAGE (Owner) và Garage entity
+        /// </summary>
+        [HttpPost("partner/register")]
+        [ProducesResponseType(typeof(ApiResponse<PartnerRegisterResponseDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<PartnerRegisterResponseDto>>> PartnerRegister([FromBody] PartnerRegisterRequestDto request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Dữ liệu không hợp lệ"));
+                }
+
+                // Kiểm tra email user đã tồn tại
+                var existingUser = await _userRepository.GetByEmailAsync(request.Email);
+                if (existingUser != null)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Email người dùng đã được sử dụng"));
+                }
+
+                // Kiểm tra email đã tồn tại trong GarageStaff
+                var existingStaff = await _garageStaffRepository.GetByEmailAsync(request.Email);
+                if (existingStaff != null)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Email đã được sử dụng trong hệ thống garage"));
+                }
+
+                // Kiểm tra email garage đã tồn tại
+                var existingGarageEmailInUser = await _userRepository.GetByEmailAsync(request.GarageEmail);
+                if (existingGarageEmailInUser != null)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Email gara đã được sử dụng"));
+                }
+
+                // Hash password
+                var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+                // Tạo User với role GARAGE (Owner)
+                var newUser = new User
+                {
+                    FullName = request.FullName,
+                    Email = request.Email,
+                    PhoneNumber = request.PhoneNumber,
+                    PasswordHash = passwordHash,
+                    UserRole = RoleUser.GARAGE, // Owner role
+                    UserStatus = UserStatus.ACTIVE,
+                    IsActive = true,
+                    CreatedAt = DateTimeOffset.UtcNow
+                };
+
+                // Generate tokens for user
+                var accessToken = _jwtConfiguration.GenerateJwtToken(newUser);
+                var refreshToken = _jwtConfiguration.GenerateRefreshToken(out DateTime refreshTokenExpiry);
+
+                // Lưu refresh token vào user
+                newUser.RefreshToken = refreshToken;
+                newUser.RefreshTokenExpiryTime = refreshTokenExpiry;
+
+                // Lưu user vào database
+                await _userRepository.AddAsync(newUser);
+
+                // Tạo Garage liên kết với User
+                var newGarage = new Garage
+                {
+                    Name = request.GarageName,
+                    Email = request.GarageEmail,
+                    PhoneNumber = request.GaragePhoneNumber,
+                    Description = request.Description ?? string.Empty,
+                    OperatingTime = request.OperatingTime,
+                    Latitude = request.Latitude ?? string.Empty,
+                    Longitude = request.Longitude ?? string.Empty,
+                    Image = string.Empty, // Image will be uploaded later
+                    IsActive = true,
+                    UserId = newUser.Id, // Link to User (Owner)
+                    CreatedAt = DateTimeOffset.UtcNow
+                };
+
+                // Lưu garage vào database
+                await _garageRepository.AddAsync(newGarage);
+
+                // Tạo response
+                var response = new PartnerRegisterResponseDto
+                {
+                    UserId = newUser.Id,
+                    UserEmail = newUser.Email,
+                    UserRole = newUser.UserRole, // RoleUser.GARAGE
+                    GarageId = newGarage.Id,
+                    GarageName = newGarage.Name,
+                    GarageEmail = newGarage.Email,
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken
+                };
+
+                _logger.LogInformation("Partner registered successfully: User {UserId} (Role: GARAGE), Garage {GarageId}", 
+                    newUser.Id, newGarage.Id);
+
+                return Created("", ApiResponse<PartnerRegisterResponseDto>.Created("Đăng ký partner thành công", response));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during partner registration");
+                return StatusCode(500, ApiResponse<object>.InternalError("Lỗi khi đăng ký partner"));
             }
         }
 

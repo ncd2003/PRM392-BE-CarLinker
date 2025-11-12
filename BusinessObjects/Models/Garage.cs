@@ -38,8 +38,12 @@ namespace BusinessObjects.Models
         [ForeignKey(nameof(UserId))]
         public int UserId { get; set; }
         public virtual User User { get; set; } = default!;
+        
         // Navigation Property cho mối quan hệ N-N
         public virtual ICollection<GarageServiceItem> GarageServiceItems { get; set; } = new List<GarageServiceItem>();
         public virtual ICollection<ServiceRecord> ServiceRecords { get; set; } = new List<ServiceRecord>();
+        
+        // Navigation Property cho GarageStaff (1-N)
+        public virtual ICollection<GarageStaff> GarageStaffs { get; set; } = new List<GarageStaff>();
     }
 }

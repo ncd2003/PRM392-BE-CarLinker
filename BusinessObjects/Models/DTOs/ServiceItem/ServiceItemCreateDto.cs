@@ -9,6 +9,5 @@ namespace BusinessObjects.Models.DTOs.ServiceItem
     public class ServiceItemCreateDto
     {
         public string? Name { get; set; }
-        public decimal? Price { get; set; }
     }
 }

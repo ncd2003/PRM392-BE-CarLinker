@@ -16,21 +16,21 @@ namespace TheVehicleEcosystemAPI.Controllers
     public class ServiceRecordController : ControllerBase
     {
         private readonly IServiceRecordRepository _serviceRecordRepository;
-        private readonly IServiceItemRepository _serviceItemRepository;  // ✅ THÊM
+        private readonly IServiceItemRepository _serviceItemRepository;
         private readonly ILogger<ServiceCategoryController> _logger;
 
         public ServiceRecordController(
             IServiceRecordRepository serviceRecordRepository,
-            IServiceItemRepository serviceItemRepository,  // ✅ THÊM
+            IServiceItemRepository serviceItemRepository,
             ILogger<ServiceCategoryController> logger)
         {
             _serviceRecordRepository = serviceRecordRepository;
-            _serviceItemRepository = serviceItemRepository;  // ✅ THÊM
+            _serviceItemRepository = serviceItemRepository;
             _logger = logger;
         }
 
         [HttpGet]
-        [Authorize(Roles = "OWNER")]
+        [Authorize(Roles = "GARAGE")]
         [ProducesResponseType(typeof(ApiResponse<PaginatedData<ServiceRecordDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -78,7 +78,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         {
             try
             {
-                var (items, total) = await _serviceRecordRepository.GetAllByUserIdAsync(UserContextHelper.GetUserId(User).Value,page, size, sortBy, isAsc);
+                var (items, total) = await _serviceRecordRepository.GetAllByUserIdAsync(UserContextHelper.GetUserId(User).Value, page, size, sortBy, isAsc);
                 var serviceRecordDtos = items.Select(u => u.Adapt<ServiceRecordDto>());
 
                 var paginatedData = new PaginatedData<ServiceRecordDto>(serviceRecordDtos, total, page, size);
@@ -132,12 +132,12 @@ namespace TheVehicleEcosystemAPI.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpPost("{garageId}")]
         [Authorize(Roles = "CUSTOMER")]
         [ProducesResponseType(typeof(ApiResponse<ServiceRecordCreateDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<ServiceRecordCreateDto>>> CreateServiceRecord([FromBody] ServiceRecordCreateDto serviceRecordCreateDto)
+        public async Task<ActionResult<ApiResponse<ServiceRecordCreateDto>>> CreateServiceRecord(int garageId, [FromBody] ServiceRecordCreateDto serviceRecordCreateDto)
         {
             try
             {
@@ -147,37 +147,35 @@ namespace TheVehicleEcosystemAPI.Controllers
                     return BadRequest(response);
                 }
 
-                // ✅ Tạo ServiceRecord mới
                 var serviceRecord = new ServiceRecord
                 {
                     VehicleId = serviceRecordCreateDto.VehicleId,
                     UserId = UserContextHelper.GetUserId(User).Value,
+                    GarageId = garageId,
                     ServiceRecordStatus = BusinessObjects.Models.Type.ServiceRecordStatus.PENDING,
                     StartTime = DateTime.UtcNow,
                     ServiceItems = new List<ServiceItem>()
                 };
 
-                // ✅ Load ServiceItems từ DB dựa trên IDs
                 if (serviceRecordCreateDto.ServiceItems != null && serviceRecordCreateDto.ServiceItems.Any())
                 {
                     foreach (var serviceItemId in serviceRecordCreateDto.ServiceItems)
                     {
                         var serviceItem = await _serviceItemRepository.GetByIdAsync(serviceItemId);
-                        
+
                         if (serviceItem == null)
                         {
                             return BadRequest(ApiResponse<object>.BadRequest($"ServiceItem với ID {serviceItemId} không tồn tại"));
                         }
 
-                        // ✅ Clone ServiceItem để link với ServiceRecord mới
-                        // Không dùng ServiceItem gốc vì nó có thể đang được dùng ở chỗ khác
+                        // Create a copy of ServiceItem for this service record
+                        // Note: Price is no longer stored in ServiceItem, but in GarageServiceItem
+                        // The total cost will be calculated in the repository layer
                         var newServiceItem = new ServiceItem
                         {
                             Name = serviceItem.Name,
-                            Price = serviceItem.Price,
                             ServiceCategoryId = serviceItem.ServiceCategoryId,
                             IsActive = true
-                            // ServiceRecordId sẽ tự động được set khi save
                         };
 
                         serviceRecord.ServiceItems.Add(newServiceItem);
@@ -186,7 +184,7 @@ namespace TheVehicleEcosystemAPI.Controllers
 
                     return Created("", ApiResponse<ServiceRecordCreateDto>.Created("Tạo dịch vụ thành công", serviceRecordCreateDto));
                 }
-                return BadRequest("Tạo dịch vụ không thành công");
+                return BadRequest(ApiResponse<object>.BadRequest("Tạo dịch vụ không thành công - danh sách service items trống"));
 
             }
             catch (ArgumentException ex)
@@ -203,7 +201,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         [HttpPatch("{id}")]
-        [Authorize(Roles = "OWNER")]
+        [Authorize(Roles = "STAFF")]
         [ProducesResponseType(typeof(ApiResponse<ServiceRecordUpdateDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -224,6 +222,10 @@ namespace TheVehicleEcosystemAPI.Controllers
                     return NotFound(notFoundResponse);
                 }
                 serviceRecordUpdateDto.Adapt(serviceRecordDB);
+                if (serviceRecordDB.ServiceRecordStatus == BusinessObjects.Models.Type.ServiceRecordStatus.PENDING)
+                {
+                    serviceRecordDB.StaffId = UserContextHelper.GetUserId(User).Value;
+                }
                 await _serviceRecordRepository.UpdateAsync(serviceRecordDB);
                 return Ok(ApiResponse<ServiceRecordUpdateDto>.Success("Cập nhật dịch vụ thành công", serviceRecordUpdateDto));
             }

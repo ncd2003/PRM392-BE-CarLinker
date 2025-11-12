@@ -104,7 +104,9 @@ namespace DataAccess
         }
 
         // Version đơn giản: Chỉ tính tổng các items có trong DB và IsActive
-        public async Task<decimal> TotalPriceByIds(List<int> serviceItemIds)
+        // NOTE: Price is now in GarageServiceItem, not ServiceItem
+        // This method should be refactored or removed as it no longer makes sense
+        public async Task<decimal> TotalPriceByGarageServiceItems(int garageId, List<int> serviceItemIds)
         {
             // ✅ Validate input
             if (serviceItemIds == null || !serviceItemIds.Any())
@@ -112,12 +114,14 @@ namespace DataAccess
                 return 0;
             }
 
-            // ✅ Remove duplicates và tính tổng (chỉ items IsActive)
+            // ✅ Remove duplicates và tính tổng từ GarageServiceItem
             var distinctIds = serviceItemIds.Distinct().ToList();
 
-            return await _context.ServiceItem
-                .Where(si => distinctIds.Contains(si.Id) && si.IsActive)
-                .SumAsync(si => si.Price);
+            return await _context.Set<GarageServiceItem>()
+                .Where(gsi => gsi.GarageId == garageId && 
+                             distinctIds.Contains(gsi.ServiceItemId) && 
+                             gsi.IsActive)
+                .SumAsync(gsi => gsi.Price);
         }
     }
 }

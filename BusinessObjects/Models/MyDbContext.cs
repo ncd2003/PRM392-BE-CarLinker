@@ -267,24 +267,18 @@ namespace BusinessObjects
             // GARAGE CONFIGURATION
             // ==========================================================
             modelBuilder.Entity<Garage>()
-                .HasMany(g => g.ServiceCategories)
-                .WithOne(sc => sc.Garage)
-                .HasForeignKey(sc => sc.GarageId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Garage>()
                 .HasOne(g => g.User)
                 .WithOne()
                 .HasForeignKey<Garage>(g => g.UserId);
 
+            modelBuilder.Entity<Garage>()
+                .HasMany(g => g.ServiceRecords)
+                .WithOne(sr => sr.Garage)
+                .HasForeignKey(sr => sr.GarageId);
+
             // ==========================================================
             // SERVICE CATEGORY CONFIGURATION
             // ==========================================================
-            modelBuilder.Entity<ServiceCategory>()
-                .HasOne(sc => sc.Garage)
-                .WithMany(g => g.ServiceCategories)
-                .HasForeignKey(sc => sc.GarageId)
-                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<ServiceCategory>()
                 .HasMany(sc => sc.ServiceItems)
@@ -293,12 +287,25 @@ namespace BusinessObjects
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull);
 
+
             // ==========================================================
-            // SERVICE ITEM CONFIGURATION
+            // GARAGE CONFIGURATION
             // ==========================================================
-            modelBuilder.Entity<ServiceItem>()
-                .Property(si => si.Price)
-                .HasPrecision(18, 2);
+            // 1. Định nghĩa Khóa chính kép cho bảng trung gian
+            modelBuilder.Entity<GarageServiceItem>()
+                .HasKey(gsi => new { gsi.GarageId, gsi.ServiceItemId });
+
+            // 2. Cấu hình mối quan hệ giữa Garage và GarageServiceItem
+            modelBuilder.Entity<GarageServiceItem>()
+                .HasOne(gsi => gsi.Garage) // Mỗi bản ghi trung gian có 1 Garage
+                .WithMany(g => g.GarageServiceItems) // Một Garage có nhiều bản ghi trung gian
+                .HasForeignKey(gsi => gsi.GarageId);
+
+            // 3. Cấu hình mối quan hệ giữa ServiceItem và GarageServiceItem
+            modelBuilder.Entity<GarageServiceItem>()
+                .HasOne(gsi => gsi.ServiceItem) // Mỗi bản ghi trung gian có 1 ServiceItem
+                .WithMany(si => si.GarageServiceItems) // Một ServiceItem có nhiều bản ghi trung gian
+                .HasForeignKey(gsi => gsi.ServiceItemId);
 
             // ==========================================================
             // SERVICE RECORD CONFIGURATION
@@ -330,6 +337,10 @@ namespace BusinessObjects
                 .WithOne()
                 .HasForeignKey(si => si.ServiceRecordId)
                 .IsRequired(false);
+
+            modelBuilder.Entity<ServiceRecord>()
+                .HasOne(sr => sr.Garage)
+                .WithMany(g => g.ServiceRecords);
         }
 
         // ==========================================================

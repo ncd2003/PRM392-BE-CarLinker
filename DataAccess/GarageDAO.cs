@@ -64,8 +64,20 @@ namespace DataAccess
         }
         public async Task<Garage?> GetById(int id)
         {
-            return await _context.Garage.FirstOrDefaultAsync(g => g.Id == id && g.IsActive);
+            return await _context.Garage
+                .Include(g => g.GarageServiceItems)
+                    .ThenInclude(gsi => gsi.ServiceItem)
+                        .ThenInclude(si => si.ServiceCategory)
+                .FirstOrDefaultAsync(g => g.Id == id && g.IsActive);
+        }
 
+        public async Task<Garage?> GetByUserId(int userId)
+        {
+            return await _context.Garage
+                .Include(g => g.GarageServiceItems)
+                    .ThenInclude(gsi => gsi.ServiceItem)
+                        .ThenInclude(si => si.ServiceCategory)
+                .FirstOrDefaultAsync(g => g.UserId == userId && g.IsActive);
         }
 
         public async Task Update(Garage garage)

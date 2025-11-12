@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace BusinessObjects.Models.Type
 {
-    public enum Role
+    public enum RoleUser
     {
-        CUSTOMER, OWNER, DEALER, WAREHOUSE ,STAFF, MANAGER, ADMIN
+        CUSTOMER = 0,
+        
     }
 }

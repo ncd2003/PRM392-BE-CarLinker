@@ -17,9 +17,9 @@ namespace Repositories
         {
             _garageDAO = garageDAO;
         }
-        public async Task AddAsync(Garage vehicle)
+        public async Task AddAsync(Garage garage)
         {
-            await _garageDAO.Add(vehicle);
+            await _garageDAO.Add(garage);
         }
 
         public async Task<(IEnumerable<Garage> items, int total)> GetAllAsync(int page, int pageSize, string? sortBy = null, bool isAsc = true)
@@ -89,6 +89,32 @@ namespace Repositories
             // Soft delete
             garageDB.IsActive = false;
             await _garageDAO.Delete(garageDB);
+        }
+
+        public async Task<Garage?> GetByUserIdAsync(int userId)
+        {
+            return await _garageDAO.GetByUserId(userId);
+        }
+
+        public async Task UpdateGarageServiceItemAsync(Garage garage)
+        {
+            if (garage == null)
+            {
+                throw new ArgumentNullException(nameof(garage), "Garage cannot be null");
+            }
+
+            if (garage.Id <= 0)
+            {
+                throw new ArgumentException("Invalid Garage ID", nameof(garage.Id));
+            }
+
+            var garageDB = await _garageDAO.GetById(garage.Id);
+            if (garageDB == null)
+            {
+                throw new KeyNotFoundException($"Garage with ID {garage.Id} not found");
+            }
+            garageDB.GarageServiceItems = garage.GarageServiceItems;
+            await _garageDAO.Update(garageDB);
         }
     }
 }

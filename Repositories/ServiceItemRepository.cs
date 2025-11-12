@@ -106,16 +106,5 @@ namespace Repositories
 
             return await _serviceItemDAO.GetByIds(serviceItemIds);
         }
-
-        // ✅ THÊM: Tính tổng giá theo IDs
-        public async Task<decimal> TotalPriceByIdsAsync(List<int> serviceItemIds)
-        {
-            if (serviceItemIds == null || !serviceItemIds.Any())
-            {
-                return 0;
-            }
-
-            return await _serviceItemDAO.TotalPriceByIds(serviceItemIds);
-        }
     }
 }

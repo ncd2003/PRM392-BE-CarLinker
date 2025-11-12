@@ -4,7 +4,6 @@ using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Repositories;
-using System.Collections.Generic;
 using TheVehicleEcosystemAPI.Response.DTOs;
 using TheVehicleEcosystemAPI.Utils;
 
@@ -33,20 +32,21 @@ namespace TheVehicleEcosystemAPI.Controllers
             _logger = logger;
         }
 
-        /// <summary>
-        /// Lấy danh sách tất cả serviceCategory (Chỉ ADMIN)
-        /// </summary>
-        [HttpGet]
-        [AllowAnonymous]
+        [HttpGet()]
+        [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(typeof(ApiResponse<PaginatedData<ServiceCategoryDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<ServiceCategoryDto>>> GetAllServiceCategories()
+        public async Task<ActionResult<ApiResponse<ServiceCategoryDto>>> GetAllServiceCategories(
+           [FromQuery] int page = 1,
+           [FromQuery] int size = 30,
+           [FromQuery] string? sortBy = null,
+           [FromQuery] bool isAsc = true)
         {
             try
             {
-                var items = await _serviceCategoryRepository.GetAllAsync();
+                var items = await _serviceCategoryRepository.GetAllAsync(page, size, sortBy, isAsc);
                 var serviceCategoryDtos = items.Adapt<IEnumerable<ServiceCategoryDto>>();
                 return Ok(ApiResponse<IEnumerable<ServiceCategoryDto>>.Success("Lấy danh sách gói dịch vụ thành công", serviceCategoryDtos));
             }
@@ -63,11 +63,8 @@ namespace TheVehicleEcosystemAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Lấy thông tin serviceCategory theo ID (ADMIN có thể xem tất cả, serviceCategory khác chỉ xem của mình)
-        /// </summary>
         [HttpGet("{id}")]
-        [Authorize(Roles = "OWNER")]
+        [Authorize(Roles = "ADMIN, GARAGE")]
         [ProducesResponseType(typeof(ApiResponse<ServiceCategoryDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -98,12 +95,12 @@ namespace TheVehicleEcosystemAPI.Controllers
             }
         }
 
-        [HttpPost("{garageId}")]
-        [Authorize(Roles = "OWNER")]
+        [HttpPost]
+        [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(typeof(ApiResponse<ServiceCategoryDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<ServiceCategoryDto>>> CreateServiceCategory(int garageId, [FromBody] ServiceCategoryCreateDto serviceCategoryCreateDto)
+        public async Task<ActionResult<ApiResponse<ServiceCategoryDto>>> CreateServiceCategory([FromBody] ServiceCategoryCreateDto serviceCategoryCreateDto)
         {
             try
             {
@@ -113,18 +110,10 @@ namespace TheVehicleEcosystemAPI.Controllers
                     return BadRequest(response);
                 }
 
-                // Get garage
-                var garageDB = await _garageRepository.GetByIdAsync(garageId);
-                if (garageDB == null)
-                {
-                    return NotFound(ApiResponse<object>.NotFound("Không tìm thấy gara liên kết."));
-                }
-
                 // Create ServiceCategory
                 var serviceCategory = new ServiceCategory
                 {
                     Name = serviceCategoryCreateDto.Name,
-                    GarageId = garageDB.Id,
                     IsActive = true
                 };
 
@@ -161,11 +150,8 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
 
-        /// <summary>
-        /// Cập nhật thông tin serviceCategory (ADMIN có thể cập nhật tất cả, serviceCategory khác chỉ cập nhật của mình)
-        /// </summary>
         [HttpPatch("{id}")]
-        [Authorize(Roles = "OWNER")]
+        [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(typeof(ApiResponse<ServiceCategoryDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -199,7 +185,7 @@ namespace TheVehicleEcosystemAPI.Controllers
                     // Get all current items in this category
                     var allItems = await _serviceItemRepository.GetAllAsync();
                     var currentItems = allItems.Where(si => si.ServiceCategoryId == id).ToList();
-                    
+
                     // Remove items that are no longer in the category
                     foreach (var item in currentItems)
                     {
@@ -242,11 +228,8 @@ namespace TheVehicleEcosystemAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Xóa serviceCategory (Chỉ ADMIN)
-        /// </summary>
         [HttpDelete("{id}")]
-        //[Authorize(Roles = "OWNER")]
+        [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]

@@ -303,7 +303,7 @@ namespace DataAccess
 
             var validTransitions = new Dictionary<OrderStatus, List<OrderStatus>>
     {
-        { OrderStatus.PENDING, new List<OrderStatus> { OrderStatus.CONFIRMED } },
+        { OrderStatus.PENDING, new List<OrderStatus> { OrderStatus.CONFIRMED, OrderStatus.FAILED } },
         { OrderStatus.CONFIRMED, new List<OrderStatus> { OrderStatus.PACKED, OrderStatus.PENDING } },
         { OrderStatus.PACKED, new List<OrderStatus> { OrderStatus.SHIPPING, OrderStatus.CONFIRMED } },
         { OrderStatus.SHIPPING, new List<OrderStatus> { OrderStatus.DELIVERED, OrderStatus.FAILED, OrderStatus.PACKED } }

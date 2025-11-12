@@ -18,9 +18,6 @@ namespace BusinessObjects.Models
         [ForeignKey("Category")]
         public int CategoryId { get; set; }
 
-        [Required]
-        [ForeignKey("Manufacturer")]
-        public int ManufacturerId { get; set; }
 
         [Required]
         [ForeignKey("Brand")]

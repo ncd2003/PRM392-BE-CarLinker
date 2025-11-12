@@ -12,13 +12,35 @@ namespace Repositories
     {
         private readonly CategoryDAO _categoryDAO;
 
+        // Giả sử CategoryDAO đã được đăng ký trong DI
         public CategoryRepository(CategoryDAO categoryDAO)
         {
-            _categoryDAO = categoryDAO ?? throw new ArgumentNullException(nameof(categoryDAO));
+            _categoryDAO = categoryDAO;
         }
+
         public async Task<List<Category>> GetAllCategoriesAsync()
         {
             return await _categoryDAO.GetAllCategoriesAsync();
+        }
+
+        public async Task<Category?> GetCategoryByIdAsync(int id)
+        {
+            return await _categoryDAO.GetCategoryByIdAsync(id);
+        }
+
+        public async Task<Category> CreateCategoryAsync(Category category)
+        {
+            return await _categoryDAO.CreateCategoryAsync(category);
+        }
+
+        public async Task<bool> UpdateCategoryAsync(Category category)
+        {
+            return await _categoryDAO.UpdateCategoryAsync(category);
+        }
+
+        public async Task<bool> DeleteCategoryAsync(int id)
+        {
+            return await _categoryDAO.DeleteCategoryAsync(id);
         }
     }
 }

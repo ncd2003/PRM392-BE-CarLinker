@@ -73,7 +73,6 @@ namespace DataAccess
                 // 1. Lấy thông tin chung
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
-                .Include(p => p.Manufacturer)
                 .Include(p => p.ProductImages)
 
                 // 2. Tải Options và Values

@@ -12,7 +12,6 @@ namespace BusinessObjects
         // --- 1. DbSet chính ---
         public DbSet<Brand> Brand { get; set; }
         public DbSet<Category> Category { get; set; }
-        public DbSet<Manufacturer> Manufacturer { get; set; }
         public DbSet<Product> Product { get; set; }
         public DbSet<ProductOption> ProductOption { get; set; }
         public DbSet<OptionValue> OptionValue { get; set; }
@@ -112,11 +111,6 @@ namespace BusinessObjects
                 .HasForeignKey(p => p.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<Manufacturer>()
-                .HasMany(m => m.Products)
-                .WithOne(p => p.Manufacturer)
-                .HasForeignKey(p => p.ManufacturerId)
-                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Brand>()
                 .HasMany(b => b.Products)

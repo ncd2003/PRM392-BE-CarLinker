@@ -45,6 +45,36 @@ namespace TheVehicleEcosystemAPI.Security
         }
 
         /// <summary>
+        /// Generate JWT Access Token for GarageStaff - Chứa id, email, role và garageId
+        /// </summary>
+        public string GenerateJwtTokenForGarageStaff(GarageStaff staff)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            // ✨ Lưu id, email, role (GarageRole) và garageId trong claims
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, staff.Id.ToString()),
+                new Claim("userId", staff.Id.ToString()), // Alias for compatibility
+                new Claim(ClaimTypes.Email, staff.Email),
+                new Claim(ClaimTypes.Role, staff.GarageRole.ToString()),
+                new Claim("garageId", staff.GarageId.ToString()),
+                new Claim("userType", "GarageStaff") // Để phân biệt với User
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(Convert.ToDouble(_configuration["Jwt:ExpiresInHours"] ?? "1")),
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        /// <summary>
         /// Generate Refresh Token với expire time được lưu trong chính token
         /// </summary>
         public string GenerateRefreshToken(out DateTime expiryTime)

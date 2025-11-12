@@ -8,10 +8,8 @@ namespace BusinessObjects.Models.Type
 {
     public enum RoleGarage
     {
-        GARAGE = 0,
-        DEALER = 1,
-        WAREHOUSE = 2,
-        STAFF = 3,
-        ADMIN = 4
+        DEALER = 0,
+        WAREHOUSE = 1,
+        STAFF = 2,
     }
 }

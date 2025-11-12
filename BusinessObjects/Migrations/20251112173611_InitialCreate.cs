@@ -358,6 +358,37 @@ namespace BusinessObjects.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "GarageStaff",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FullName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    PhoneNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    PasswordHash = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    Image = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    GarageRole = table.Column<int>(type: "int", nullable: false),
+                    UserStatus = table.Column<int>(type: "int", nullable: false),
+                    RefreshToken = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    RefreshTokenExpiryTime = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    GarageId = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GarageStaff", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_GarageStaff_Garage_GarageId",
+                        column: x => x.GarageId,
+                        principalTable: "Garage",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ServiceRecord",
                 columns: table => new
                 {
@@ -592,6 +623,22 @@ namespace BusinessObjects.Migrations
                 column: "ServiceItemId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_GarageStaff_GarageId_IsActive",
+                table: "GarageStaff",
+                columns: new[] { "GarageId", "IsActive" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_GarageStaff_PhoneNumber",
+                table: "GarageStaff",
+                column: "PhoneNumber");
+
+            migrationBuilder.CreateIndex(
+                name: "UX_GarageStaff_Email",
+                table: "GarageStaff",
+                column: "Email",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_OptionValue_OptionId",
                 table: "OptionValue",
                 column: "OptionId");
@@ -728,6 +775,9 @@ namespace BusinessObjects.Migrations
 
             migrationBuilder.DropTable(
                 name: "GarageServiceItem");
+
+            migrationBuilder.DropTable(
+                name: "GarageStaff");
 
             migrationBuilder.DropTable(
                 name: "OrderItem");

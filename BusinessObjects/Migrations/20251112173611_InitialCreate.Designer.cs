@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BusinessObjects.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    [Migration("20251112153117_InitialCreate")]
+    [Migration("20251112173611_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -229,6 +229,76 @@ namespace BusinessObjects.Migrations
                     b.HasIndex("ServiceItemId");
 
                     b.ToTable("GarageServiceItem");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.GarageStaff", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset?>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("GarageId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GarageRole")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Image")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("RefreshToken")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("RefreshTokenExpiryTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("UserStatus")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("UX_GarageStaff_Email");
+
+                    b.HasIndex("PhoneNumber")
+                        .HasDatabaseName("IX_GarageStaff_PhoneNumber");
+
+                    b.HasIndex("GarageId", "IsActive")
+                        .HasDatabaseName("IX_GarageStaff_GarageId_IsActive");
+
+                    b.ToTable("GarageStaff", (string)null);
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.Manufacturer", b =>
@@ -951,6 +1021,17 @@ namespace BusinessObjects.Migrations
                     b.Navigation("ServiceItem");
                 });
 
+            modelBuilder.Entity("BusinessObjects.Models.GarageStaff", b =>
+                {
+                    b.HasOne("BusinessObjects.Models.Garage", "Garage")
+                        .WithMany("GarageStaffs")
+                        .HasForeignKey("GarageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Garage");
+                });
+
             modelBuilder.Entity("BusinessObjects.Models.OptionValue", b =>
                 {
                     b.HasOne("BusinessObjects.Models.ProductOption", "ProductOption")
@@ -1157,6 +1238,8 @@ namespace BusinessObjects.Migrations
             modelBuilder.Entity("BusinessObjects.Models.Garage", b =>
                 {
                     b.Navigation("GarageServiceItems");
+
+                    b.Navigation("GarageStaffs");
 
                     b.Navigation("ServiceRecords");
                 });

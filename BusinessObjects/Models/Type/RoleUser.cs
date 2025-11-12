@@ -9,6 +9,7 @@ namespace BusinessObjects.Models.Type
     public enum RoleUser
     {
         CUSTOMER = 0,
-        
+        GARAGE = 1,
+        ADMIN = 2
     }
 }

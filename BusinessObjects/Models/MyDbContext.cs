@@ -36,6 +36,12 @@ namespace BusinessObjects
 
         public DbSet<ProductImage> ProductImage { get; set; }
 
+        // --- 4. Chat System ---
+        public DbSet<ChatRoom> ChatRoom { get; set; }
+        public DbSet<ChatMessage> ChatMessage { get; set; }
+        public DbSet<ChatRoomMember> ChatRoomMember { get; set; }
+        public DbSet<GarageStaff> GarageStaff { get; set; }
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -347,6 +353,91 @@ namespace BusinessObjects
             modelBuilder.Entity<ServiceRecord>()
                 .HasOne(sr => sr.Garage)
                 .WithMany(g => g.ServiceRecords);
+
+            // ==========================================================
+            // GARAGE STAFF CONFIGURATION
+            // ==========================================================
+            modelBuilder.Entity<GarageStaff>().ToTable("GarageStaff");
+
+            modelBuilder.Entity<GarageStaff>()
+                .HasIndex(gs => gs.Email)
+                .IsUnique();
+
+            modelBuilder.Entity<GarageStaff>()
+                .HasIndex(gs => gs.PhoneNumber)
+                .IsUnique();
+
+            modelBuilder.Entity<GarageStaff>()
+                .HasOne(gs => gs.Garage)
+                .WithMany()
+                .HasForeignKey(gs => gs.GarageId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // ==========================================================
+            // CHAT ROOM CONFIGURATION
+            // ==========================================================
+            modelBuilder.Entity<ChatRoom>().ToTable("ChatRoom");
+
+            modelBuilder.Entity<ChatRoom>()
+                .HasOne(cr => cr.Garage)
+                .WithMany()
+                .HasForeignKey(cr => cr.GarageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ChatRoom>()
+                .HasOne(cr => cr.Customer)
+                .WithMany()
+                .HasForeignKey(cr => cr.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ChatRoom>()
+                .HasMany(cr => cr.Messages)
+                .WithOne(cm => cm.ChatRoom)
+                .HasForeignKey(cm => cm.RoomId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ChatRoom>()
+                .HasMany(cr => cr.Members)
+                .WithOne(crm => crm.ChatRoom)
+                .HasForeignKey(crm => crm.RoomId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Create index for faster lookups
+            modelBuilder.Entity<ChatRoom>()
+                .HasIndex(cr => new { cr.GarageId, cr.CustomerId })
+                .IsUnique()
+                .HasDatabaseName("UX_ChatRoom_GarageId_CustomerId");
+
+            modelBuilder.Entity<ChatRoom>()
+                .Property(cr => cr.LastMessageAt)
+                .HasDefaultValueSql("GETDATE()");
+
+            // ==========================================================
+            // CHAT MESSAGE CONFIGURATION
+            // ==========================================================
+            modelBuilder.Entity<ChatMessage>().ToTable("ChatMessage");
+
+            modelBuilder.Entity<ChatMessage>()
+                .HasIndex(cm => cm.RoomId)
+                .HasDatabaseName("IX_ChatMessage_RoomId");
+
+            modelBuilder.Entity<ChatMessage>()
+                .HasIndex(cm => new { cm.RoomId, cm.CreatedAt })
+                .HasDatabaseName("IX_ChatMessage_RoomId_CreatedAt");
+
+            // ==========================================================
+            // CHAT ROOM MEMBER CONFIGURATION
+            // ==========================================================
+            modelBuilder.Entity<ChatRoomMember>().ToTable("ChatRoomMember");
+
+            modelBuilder.Entity<ChatRoomMember>()
+                .HasIndex(crm => new { crm.RoomId, crm.UserId, crm.UserType })
+                .IsUnique()
+                .HasDatabaseName("UX_ChatRoomMember_RoomId_UserId_UserType");
+
+            modelBuilder.Entity<ChatRoomMember>()
+                .Property(crm => crm.JoinedAt)
+                .HasDefaultValueSql("GETDATE()");
         }
 
         // ==========================================================

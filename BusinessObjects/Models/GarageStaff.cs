@@ -39,5 +39,12 @@ namespace BusinessObjects.Models
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiryTime { get; set; }
         public bool IsActive { get; set; } = true;
+
+        // Foreign Key to Garage
+        [ForeignKey(nameof(Garage))]
+        public int? GarageId { get; set; }
+
+        // Navigation Property
+        public virtual Garage? Garage { get; set; }
     }
 }

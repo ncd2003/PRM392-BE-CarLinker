@@ -30,14 +30,10 @@ namespace BusinessObjects.Models
         [MaxLength(255)]
         public string Name { get; set; }
 
-        [Column(TypeName = "nvarchar(max)")]
         public string? Description { get; set; }
 
-        [StringLength(255)]
-        public string? Image { get; set; }        // URL hoặc tên file ảnh (vd: "product-001.jpg")
 
         [Required]
-        [Column(TypeName = "int")]
         public int WarrantyPeriod { get; set; } = 0;
 
         [Required]
@@ -55,7 +51,7 @@ namespace BusinessObjects.Models
         // Collection navigation properties
         public virtual ICollection<ProductVariant> ProductVariants { get; set; }
         public virtual ICollection<ProductOption> ProductOptions { get; set; }
-        //public virtual ICollection<ProductImage> ProductImages { get; set; }
-        //public virtual ICollection<ProductCompatibleVehicle> CompatibleVehicles { get; set; }
+
+        public virtual ICollection<ProductImage> ProductImages { get; set; }
     }
 }

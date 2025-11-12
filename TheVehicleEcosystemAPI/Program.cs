@@ -116,7 +116,11 @@ namespace TheVehicleEcosystemAPI
                 options.AddPolicy("AllowAll",
                     policy =>
                     {
-                        policy.WithOrigins("http://localhost:5173")
+                        policy.WithOrigins(
+                      "http://localhost:5173",           // React app
+                      "http://10.0.2.2:5291",            // Android emulator
+                      "http://192.168.1.100:5291"        // Thiết bị thật (thay IP của bạn)
+                  )
                               .AllowAnyMethod()
                               .AllowAnyHeader()
                               .AllowCredentials();

@@ -1,4 +1,5 @@
 ﻿using BusinessObjects.Models.DTOs.Product;
+using BusinessObjects.Models.DTOs.Product.ProductVariant;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using BusinessObjects.Models.DTOs.Product.ProductOption;
+using BusinessObjects.Models.DTOs.Product.ProductVariant;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,7 +13,6 @@ namespace BusinessObjects.Models.DTOs.Product
         public int Id { get; set; }
         public string Name { get; set; }
         public string? Description { get; set; }
-        public string? Image { get; set; } // Ảnh đại diện chính
         public int WarrantyPeriod { get; set; }
 
         public decimal Price { get; set; }
@@ -26,6 +27,8 @@ namespace BusinessObjects.Models.DTOs.Product
 
         // Danh sách các biến thể của sản phẩm (vd: Áo Đỏ-S, Áo Xanh-M)
         public List<ProductVariantDto> ProductVariants { get; set; }
+
+        public virtual ICollection<ProductImageDto> ProductImages { get; set; }
 
 
     }

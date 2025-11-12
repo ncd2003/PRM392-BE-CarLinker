@@ -27,5 +27,7 @@ namespace Repositories
         Task<int> GetPendingOrderCountAsync();
 
         Task<decimal> GetTotalRevenueAsync();
+
+        //Task<bool> UpdateOrderStatusWithTransaction(int orderId, OrderStatus newStatus);
     }
 }

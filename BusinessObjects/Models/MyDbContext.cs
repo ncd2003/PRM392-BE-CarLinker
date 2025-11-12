@@ -34,6 +34,8 @@ namespace BusinessObjects
         public DbSet<Order> Order { get; set; }
         public DbSet<OrderItem> OrderItem { get; set; }
 
+        public DbSet<ProductImage> ProductImage { get; set; }
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -260,6 +262,12 @@ namespace BusinessObjects
             modelBuilder.Entity<OrderItem>()
                 .Property(oi => oi.UnitPrice)
                 .HasPrecision(18, 2);
+
+            modelBuilder.Entity<ProductImage>()
+                .HasOne(pi => pi.Product) // Một ProductImage thuộc về một Product
+                .WithMany(p => p.ProductImages) // Một Product có nhiều ProductImage
+                .HasForeignKey(pi => pi.ProductId) // Khóa ngoại là ProductId
+                .OnDelete(DeleteBehavior.Cascade); // <-- Quan trọng: Khi xóa Product, tất cả ProductImage liên quan sẽ tự động bị xóa.
 
             // ==========================================================
             // GARAGE CONFIGURATION

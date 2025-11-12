@@ -11,13 +11,35 @@ namespace Repositories
     public class BrandRepository : IBrandRepository
     {
         private readonly BrandDAO _brandDAO;
+
         public BrandRepository(BrandDAO brandDAO)
         {
-            _brandDAO = brandDAO ?? throw new ArgumentNullException(nameof(brandDAO));
+            _brandDAO = brandDAO;
         }
+
         public async Task<List<Brand>> GetAllBrandsAsync()
-        { 
+        {
             return await _brandDAO.GetAllBrandsAsync();
+        }
+
+        public async Task<Brand?> GetBrandByIdAsync(int id)
+        {
+            return await _brandDAO.GetBrandByIdAsync(id);
+        }
+
+        public async Task<Brand> CreateBrandAsync(Brand brand)
+        {
+            return await _brandDAO.CreateBrandAsync(brand);
+        }
+
+        public async Task<bool> UpdateBrandAsync(Brand brand)
+        {
+            return await _brandDAO.UpdateBrandAsync(brand);
+        }
+
+        public async Task<bool> DeleteBrandAsync(int id)
+        {
+            return await _brandDAO.DeleteBrandAsync(id);
         }
     }
 }

@@ -21,8 +21,39 @@ namespace DataAccess
         public async Task<List<Brand>> GetAllBrandsAsync()
         {
             return await _context.Brand
-                .Where(c => c.IsActive)
                 .ToListAsync();
+        }
+
+        public async Task<Brand?> GetBrandByIdAsync(int id)
+        {
+            return await _context.Brand
+                .FirstOrDefaultAsync(c => c.Id == id);
+        }
+
+        public async Task<Brand> CreateBrandAsync(Brand brand)
+        {
+            brand.IsActive = true;
+            await _context.Brand.AddAsync(brand);
+            await _context.SaveChangesAsync();
+            return brand;
+        }
+
+        public async Task<bool> UpdateBrandAsync(Brand brand)
+        {
+            return await _context.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteBrandAsync(int id)
+        {
+            var brand = await _context.Brand.FindAsync(id);
+            if (brand == null)
+            {
+                return false;
+            }
+
+            //soft
+            brand.IsActive = false;
+            return await _context.SaveChangesAsync() > 0;
         }
     }
 }

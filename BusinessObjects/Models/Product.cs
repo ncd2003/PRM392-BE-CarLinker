@@ -45,7 +45,6 @@ namespace BusinessObjects.Models
 
         // Navigation Properties
         public virtual Category Category { get; set; }
-        public virtual Manufacturer Manufacturer { get; set; }
         public virtual Brand Brand { get; set; }
 
         // Collection navigation properties

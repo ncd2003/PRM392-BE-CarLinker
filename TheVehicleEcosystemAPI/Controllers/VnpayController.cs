@@ -40,7 +40,13 @@ namespace TheVehicleEcosystemAPI.Controllers
                 };
 
                 var paymentUrl = _vnpay.GetPaymentUrl(request);
-                return Created(paymentUrl, paymentUrl);
+                var response = new
+                {
+                    status = 200,
+                    message = "Success",
+                    data = paymentUrl
+                };
+                return Ok(response);
             }
             catch (Exception ex)
             {

@@ -23,6 +23,9 @@ namespace TheVehicleEcosystemAPI
             // Add services to the container.
             builder.Services.AddControllers();
 
+            // Add SignalR for real-time chat messaging
+            builder.Services.AddSignalR();
+
             // ✨ Register IHttpContextAccessor for accessing HttpContext in DbContext
             builder.Services.AddHttpContextAccessor();
 
@@ -48,6 +51,9 @@ namespace TheVehicleEcosystemAPI
             builder.Services.AddScoped<GarageStaffDAO>();
             builder.Services.AddScoped<ServiceItemDAO>();
             builder.Services.AddScoped<ServiceRecordDAO>();
+            builder.Services.AddScoped<ChatRoomDAO>();
+            builder.Services.AddScoped<ChatMessageDAO>();
+            builder.Services.AddScoped<ChatRoomMemberDAO>();
 
             // Register Repositories
             builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
@@ -62,6 +68,9 @@ namespace TheVehicleEcosystemAPI
             builder.Services.AddScoped<IGarageStaffRepository, GarageStaffRepository>();
             builder.Services.AddScoped<IServiceItemRepository, ServiceItemRepository>();
             builder.Services.AddScoped<IServiceRecordRepository, ServiceRecordRepository>();
+            builder.Services.AddScoped<IChatRoomRepository, ChatRoomRepository>();
+            builder.Services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
+            builder.Services.AddScoped<IChatRoomMemberRepository, ChatRoomMemberRepository>();
 
             // Register Cloudflare R2 Storage
             builder.Services.AddSingleton<CloudflareR2Storage>();
@@ -127,7 +136,7 @@ namespace TheVehicleEcosystemAPI
                   )
                               .AllowAnyMethod()
                               .AllowAnyHeader()
-                              .AllowCredentials();
+                              .AllowCredentials(); // Required for SignalR
                     });
             });
 
@@ -204,6 +213,9 @@ Example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
             app.UseAuthorization();
 
             app.MapControllers();
+
+            // Map SignalR hub for real-time chat
+            app.MapHub<TheVehicleEcosystemAPI.Hubs.ChatHub>("/chathub");
 
             await app.RunAsync();
         }

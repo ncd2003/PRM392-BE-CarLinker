@@ -14,7 +14,7 @@ namespace BusinessObjects.Models.DTOs.Garage
         
         /// <summary>
         /// Danh sách dịch vụ được nhóm theo category
-        /// </summary>
+        /// </summary>git 
         public List<ServiceCategoryDto> ServiceCategories { get; set; } = new List<ServiceCategoryDto>();
         
         /// <summary>

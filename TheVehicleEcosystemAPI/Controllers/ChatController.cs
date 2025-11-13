@@ -1,6 +1,7 @@
 using BusinessObjects.Models;
 using BusinessObjects.Models.DTOs.Chat;
 using BusinessObjects.Models.Type;
+using DataAccess;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Repositories;
@@ -19,6 +20,8 @@ namespace TheVehicleEcosystemAPI.Controllers
         private readonly IChatRoomMemberRepository _chatRoomMemberRepository;
         private readonly IUserRepository _userRepository;
         private readonly IGarageRepository _garageRepository;
+        private readonly GarageStaffDAO _garageStaffDAO;
+        private readonly UserDAO _userDAO;
         private readonly CloudflareR2Storage _r2Storage;
         private readonly ILogger<ChatController> _logger;
         private readonly IHubContext<ChatHub> _chatHubContext;
@@ -29,6 +32,8 @@ namespace TheVehicleEcosystemAPI.Controllers
             IChatRoomMemberRepository chatRoomMemberRepository,
             IUserRepository userRepository,
             IGarageRepository garageRepository,
+            GarageStaffDAO garageStaffDAO,
+            UserDAO userDAO,
             CloudflareR2Storage r2Storage,
             ILogger<ChatController> logger,
             IHubContext<ChatHub> chatHubContext)
@@ -38,6 +43,8 @@ namespace TheVehicleEcosystemAPI.Controllers
             _chatRoomMemberRepository = chatRoomMemberRepository;
             _userRepository = userRepository;
             _garageRepository = garageRepository;
+            _garageStaffDAO = garageStaffDAO;
+            _userDAO = userDAO;
             _r2Storage = r2Storage;
             _logger = logger;
             _chatHubContext = chatHubContext;
@@ -664,6 +671,269 @@ namespace TheVehicleEcosystemAPI.Controllers
             }
 
             return "Unknown";
+        }
+
+        // ========== UC-04: Manage Chat Room & Participants ==========
+
+        /// <summary>
+        /// UC-04: Get all members of a chat room
+        /// </summary>
+        [HttpGet("rooms/{roomId}/members")]
+        public async Task<IActionResult> GetRoomMembers(long roomId)
+        {
+            try
+            {
+                // Verify room exists
+                var room = await _chatRoomRepository.GetByIdAsync(roomId);
+                if (room == null)
+                {
+                    return NotFound(ApiResponse<object>.NotFound($"Chat room with ID {roomId} not found."));
+                }
+
+                // Get all members
+                var members = await _chatRoomMemberRepository.GetMembersByRoomIdAsync(roomId);
+
+                // Map to response DTOs with user details
+                var memberResponses = new List<RoomMemberResponseDTO>();
+                foreach (var member in members)
+                {
+                    var memberDto = new RoomMemberResponseDTO
+                    {
+                        Id = member.Id,
+                        RoomId = member.RoomId,
+                        UserType = member.UserType,
+                        UserId = member.UserId,
+                        JoinedAt = member.JoinedAt
+                    };
+
+                    // Get user details based on type
+                    if (member.UserType == SenderType.STAFF)
+                    {
+                        var staff = await _garageStaffDAO.GetById(member.UserId);
+                        if (staff != null)
+                        {
+                            memberDto.UserName = staff.FullName;
+                            memberDto.UserEmail = staff.Email;
+                        }
+                        else
+                        {
+                            memberDto.UserName = $"Staff_{member.UserId}";
+                        }
+                    }
+                    else if (member.UserType == SenderType.ADMIN)
+                    {
+                        var admin = await _userDAO.GetById(member.UserId);
+                        if (admin != null)
+                        {
+                            memberDto.UserName = admin.FullName;
+                            memberDto.UserEmail = admin.Email;
+                        }
+                        else
+                        {
+                            memberDto.UserName = $"Admin_{member.UserId}";
+                        }
+                    }
+
+                    memberResponses.Add(memberDto);
+                }
+
+                return Ok(ApiResponse<List<RoomMemberResponseDTO>>.Success(
+                    "Room members retrieved successfully.", 
+                    memberResponses));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting room members for room {RoomId}", roomId);
+                return StatusCode(500, ApiResponse<object>.InternalError($"An error occurred: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// UC-04: Add a staff member to a chat room
+        /// </summary>
+        [HttpPost("rooms/{roomId}/members")]
+        public async Task<IActionResult> AddRoomMember(long roomId, [FromBody] AddRoomMemberRequestDTO request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Invalid request data."));
+                }
+
+                // Only STAFF or ADMIN can be added as members (customers are defined in ChatRoom)
+                if (request.UserType == SenderType.CUSTOMER)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest(
+                        "Cannot add customer as member. Customer is already defined in the chat room."));
+                }
+
+                // Verify room exists
+                var room = await _chatRoomRepository.GetByIdAsync(roomId);
+                if (room == null)
+                {
+                    return NotFound(ApiResponse<object>.NotFound($"Chat room with ID {roomId} not found."));
+                }
+
+                // Verify user exists based on type
+                if (request.UserType == SenderType.STAFF)
+                {
+                    var staff = await _garageStaffDAO.GetById(request.UserId);
+                    if (staff == null)
+                    {
+                        return NotFound(ApiResponse<object>.NotFound($"Staff with ID {request.UserId} not found."));
+                    }
+
+                    // Verify staff belongs to the same garage
+                    if (staff.GarageId != room.GarageId)
+                    {
+                        return BadRequest(ApiResponse<object>.BadRequest(
+                            "Staff member does not belong to this garage."));
+                    }
+                }
+                else if (request.UserType == SenderType.ADMIN)
+                {
+                    var admin = await _userDAO.GetById(request.UserId);
+                    if (admin == null)
+                    {
+                        return NotFound(ApiResponse<object>.NotFound($"Admin with ID {request.UserId} not found."));
+                    }
+                }
+
+                // Check if member already exists
+                var exists = await _chatRoomMemberRepository.IsMemberAsync(roomId, request.UserId, request.UserType);
+                if (exists)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("User is already a member of this chat room."));
+                }
+
+                // Add member
+                var member = await _chatRoomMemberRepository.AddMemberAsync(roomId, request.UserId, request.UserType);
+
+                // Create response DTO
+                var memberResponse = new RoomMemberResponseDTO
+                {
+                    Id = member.Id,
+                    RoomId = member.RoomId,
+                    UserType = member.UserType,
+                    UserId = member.UserId,
+                    JoinedAt = member.JoinedAt
+                };
+
+                // Get user details
+                if (member.UserType == SenderType.STAFF)
+                {
+                    var staff = await _garageStaffDAO.GetById(member.UserId);
+                    if (staff != null)
+                    {
+                        memberResponse.UserName = staff.FullName;
+                        memberResponse.UserEmail = staff.Email;
+                    }
+                }
+                else if (member.UserType == SenderType.ADMIN)
+                {
+                    var admin = await _userDAO.GetById(member.UserId);
+                    if (admin != null)
+                    {
+                        memberResponse.UserName = admin.FullName;
+                        memberResponse.UserEmail = admin.Email;
+                    }
+                }
+
+                // Broadcast MemberAdded event via SignalR
+                try
+                {
+                    await _chatHubContext.Clients.Group($"room_{roomId}")
+                        .SendAsync("MemberAdded", new
+                        {
+                            roomId = roomId,
+                            member = memberResponse,
+                            addedAt = member.JoinedAt
+                        });
+                }
+                catch (Exception signalREx)
+                {
+                    _logger.LogWarning(signalREx, "Failed to broadcast MemberAdded event for room {RoomId}", roomId);
+                }
+
+                return Ok(ApiResponse<RoomMemberResponseDTO>.Success(
+                    "Member added successfully.", 
+                    memberResponse));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding member to room {RoomId}", roomId);
+                return StatusCode(500, ApiResponse<object>.InternalError($"An error occurred: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// UC-04: Remove a member from a chat room
+        /// </summary>
+        [HttpDelete("rooms/{roomId}/members/{memberId}")]
+        public async Task<IActionResult> RemoveRoomMember(long roomId, long memberId)
+        {
+            try
+            {
+                // Verify room exists
+                var room = await _chatRoomRepository.GetByIdAsync(roomId);
+                if (room == null)
+                {
+                    return NotFound(ApiResponse<object>.NotFound($"Chat room with ID {roomId} not found."));
+                }
+
+                // Verify member exists
+                var member = await _chatRoomMemberRepository.GetByIdAsync(memberId);
+                if (member == null)
+                {
+                    return NotFound(ApiResponse<object>.NotFound($"Member with ID {memberId} not found."));
+                }
+
+                // Verify member belongs to this room
+                if (member.RoomId != roomId)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Member does not belong to this chat room."));
+                }
+
+                // Remove member
+                var removed = await _chatRoomMemberRepository.RemoveMemberAsync(memberId);
+                if (!removed)
+                {
+                    return StatusCode(500, ApiResponse<object>.InternalError("Failed to remove member."));
+                }
+
+                // Broadcast MemberRemoved event via SignalR
+                try
+                {
+                    await _chatHubContext.Clients.Group($"room_{roomId}")
+                        .SendAsync("MemberRemoved", new
+                        {
+                            roomId = roomId,
+                            memberId = memberId,
+                            userId = member.UserId,
+                            userType = member.UserType,
+                            removedAt = DateTime.UtcNow
+                        });
+                }
+                catch (Exception signalREx)
+                {
+                    _logger.LogWarning(signalREx, "Failed to broadcast MemberRemoved event for room {RoomId}", roomId);
+                }
+
+                return Ok(ApiResponse<object>.Success(
+                    "Member removed successfully.",
+                    new
+                    {
+                        memberId = memberId,
+                        roomId = roomId,
+                        removedAt = DateTime.UtcNow
+                    }));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing member {MemberId} from room {RoomId}", memberId, roomId);
+                return StatusCode(500, ApiResponse<object>.InternalError($"An error occurred: {ex.Message}"));
+            }
         }
     }
 }

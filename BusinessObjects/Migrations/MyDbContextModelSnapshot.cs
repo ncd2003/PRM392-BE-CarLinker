@@ -147,6 +147,133 @@ namespace BusinessObjects.Migrations
                     b.ToTable("Category");
                 });
 
+            modelBuilder.Entity("BusinessObjects.Models.ChatMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset?>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int?>("FileType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FileUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int>("MessageType")
+                        .HasColumnType("int");
+
+                    b.Property<long>("RoomId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("SenderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SenderType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoomId")
+                        .HasDatabaseName("IX_ChatMessage_RoomId");
+
+                    b.HasIndex("RoomId", "CreatedAt")
+                        .HasDatabaseName("IX_ChatMessage_RoomId_CreatedAt");
+
+                    b.ToTable("ChatMessage", (string)null);
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.ChatRoom", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset?>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GarageId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastMessageAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("GarageId", "CustomerId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ChatRoom_GarageId_CustomerId");
+
+                    b.ToTable("ChatRoom", (string)null);
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.ChatRoomMember", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset?>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<long>("RoomId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserType")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoomId", "UserId", "UserType")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ChatRoomMember_RoomId_UserId_UserType");
+
+                    b.ToTable("ChatRoomMember", (string)null);
+                });
+
             modelBuilder.Entity("BusinessObjects.Models.Garage", b =>
                 {
                     b.Property<int>("Id")
@@ -226,6 +353,70 @@ namespace BusinessObjects.Migrations
                     b.HasIndex("ServiceItemId");
 
                     b.ToTable("GarageServiceItem");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.GarageStaff", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("GarageId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GarageRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("int");
+
+                    b.Property<string>("Image")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("RefreshToken")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("RefreshTokenExpiryTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserStatus")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("GarageId");
+
+                    b.HasIndex("PhoneNumber")
+                        .IsUnique()
+                        .HasFilter("[PhoneNumber] IS NOT NULL");
+
+                    b.ToTable("GarageStaff", (string)null);
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.Manufacturer", b =>
@@ -918,6 +1109,47 @@ namespace BusinessObjects.Migrations
                     b.Navigation("ProductVariant");
                 });
 
+            modelBuilder.Entity("BusinessObjects.Models.ChatMessage", b =>
+                {
+                    b.HasOne("BusinessObjects.Models.ChatRoom", "ChatRoom")
+                        .WithMany("Messages")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChatRoom");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.ChatRoom", b =>
+                {
+                    b.HasOne("BusinessObjects.Models.User", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BusinessObjects.Models.Garage", "Garage")
+                        .WithMany()
+                        .HasForeignKey("GarageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Garage");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.ChatRoomMember", b =>
+                {
+                    b.HasOne("BusinessObjects.Models.ChatRoom", "ChatRoom")
+                        .WithMany("Members")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChatRoom");
+                });
+
             modelBuilder.Entity("BusinessObjects.Models.Garage", b =>
                 {
                     b.HasOne("BusinessObjects.Models.User", "User")
@@ -946,6 +1178,16 @@ namespace BusinessObjects.Migrations
                     b.Navigation("Garage");
 
                     b.Navigation("ServiceItem");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.GarageStaff", b =>
+                {
+                    b.HasOne("BusinessObjects.Models.Garage", "Garage")
+                        .WithMany()
+                        .HasForeignKey("GarageId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Garage");
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.OptionValue", b =>
@@ -1149,6 +1391,13 @@ namespace BusinessObjects.Migrations
             modelBuilder.Entity("BusinessObjects.Models.Category", b =>
                 {
                     b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.ChatRoom", b =>
+                {
+                    b.Navigation("Members");
+
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.Garage", b =>

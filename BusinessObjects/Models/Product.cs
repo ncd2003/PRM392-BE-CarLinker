@@ -18,9 +18,6 @@ namespace BusinessObjects.Models
         [ForeignKey("Category")]
         public int CategoryId { get; set; }
 
-        [Required]
-        [ForeignKey("Manufacturer")]
-        public int ManufacturerId { get; set; }
 
         [Required]
         [ForeignKey("Brand")]
@@ -45,7 +42,6 @@ namespace BusinessObjects.Models
 
         // Navigation Properties
         public virtual Category Category { get; set; }
-        public virtual Manufacturer Manufacturer { get; set; }
         public virtual Brand Brand { get; set; }
 
         // Collection navigation properties

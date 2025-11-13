@@ -9,7 +9,11 @@ using System.Threading.Tasks;
 
 namespace BusinessObjects.Models
 {
-    public class GarageStaff
+    /// <summary>
+    /// GarageStaff - Nhân viên của Garage
+    /// Roles: DEALER, WAREHOUSE, STAFF (không bao gồm GARAGE owner)
+    /// </summary>
+    public class GarageStaff : BaseModel
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -17,34 +21,41 @@ namespace BusinessObjects.Models
 
         [Required]
         [MaxLength(100)]
-        public string FullName { get; set; }
+        public string FullName { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(100)]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         [MaxLength(20)]
         public string? PhoneNumber { get; set; }
 
         [Required]
         [MaxLength(256)]
-        public string PasswordHash { get; set; }
+        public string PasswordHash { get; set; } = string.Empty;
+        
         public string? Image { get; set; }
 
-        [MaxLength(50)]
+        /// <summary>
+        /// Role của nhân viên: DEALER(0), WAREHOUSE(1), STAFF(2)
+        /// </summary>
         public RoleGarage GarageRole { get; set; } = RoleGarage.STAFF;
+        
         public UserStatus UserStatus { get; set; } = UserStatus.ACTIVE;
 
         [MaxLength(500)]
         public string? RefreshToken { get; set; }
+        
         public DateTime? RefreshTokenExpiryTime { get; set; }
+        
         public bool IsActive { get; set; } = true;
 
         // Foreign Key to Garage
-        [ForeignKey(nameof(Garage))]
-        public int? GarageId { get; set; }
-
+        [Required]
+        [ForeignKey(nameof(GarageId))]
+        public int GarageId { get; set; }
+        
         // Navigation Property
-        public virtual Garage? Garage { get; set; }
+        public virtual Garage Garage { get; set; } = default!;
     }
 }

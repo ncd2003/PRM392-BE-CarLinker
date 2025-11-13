@@ -228,45 +228,6 @@ namespace BusinessObjects.Migrations
                     b.ToTable("GarageServiceItem");
                 });
 
-            modelBuilder.Entity("BusinessObjects.Models.Manufacturer", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Country")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTimeOffset?>("CreatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Website")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Manufacturer");
-                });
-
             modelBuilder.Entity("BusinessObjects.Models.OptionValue", b =>
                 {
                     b.Property<int>("Id")
@@ -405,9 +366,6 @@ namespace BusinessObjects.Migrations
                     b.Property<bool>("IsFeatured")
                         .HasColumnType("bit");
 
-                    b.Property<int>("ManufacturerId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -424,8 +382,6 @@ namespace BusinessObjects.Migrations
                     b.HasIndex("BrandId");
 
                     b.HasIndex("CategoryId");
-
-                    b.HasIndex("ManufacturerId");
 
                     b.ToTable("Product");
                 });
@@ -1002,17 +958,9 @@ namespace BusinessObjects.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("BusinessObjects.Models.Manufacturer", "Manufacturer")
-                        .WithMany("Products")
-                        .HasForeignKey("ManufacturerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("Brand");
 
                     b.Navigation("Category");
-
-                    b.Navigation("Manufacturer");
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.ProductImage", b =>
@@ -1156,11 +1104,6 @@ namespace BusinessObjects.Migrations
                     b.Navigation("GarageServiceItems");
 
                     b.Navigation("ServiceRecords");
-                });
-
-            modelBuilder.Entity("BusinessObjects.Models.Manufacturer", b =>
-                {
-                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.OptionValue", b =>

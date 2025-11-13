@@ -12,8 +12,6 @@ namespace BusinessObjects.Models.DTOs.Product
         [Required(ErrorMessage = "CategoryId là bắt buộc")]
         public int CategoryId { get; set; }
 
-        [Required(ErrorMessage = "ManufacturerId là bắt buộc")]
-        public int ManufacturerId { get; set; }
 
         [Required(ErrorMessage = "BrandId là bắt buộc")]
         public int BrandId { get; set; }

@@ -2,7 +2,9 @@ using BusinessObjects.Models;
 using BusinessObjects.Models.DTOs.Chat;
 using BusinessObjects.Models.Type;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Repositories;
+using TheVehicleEcosystemAPI.Hubs;
 using TheVehicleEcosystemAPI.Response.DTOs;
 using TheVehicleEcosystemAPI.Utils;
 
@@ -19,6 +21,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         private readonly IGarageRepository _garageRepository;
         private readonly CloudflareR2Storage _r2Storage;
         private readonly ILogger<ChatController> _logger;
+        private readonly IHubContext<ChatHub> _chatHubContext;
 
         public ChatController(
             IChatRoomRepository chatRoomRepository,
@@ -27,7 +30,8 @@ namespace TheVehicleEcosystemAPI.Controllers
             IUserRepository userRepository,
             IGarageRepository garageRepository,
             CloudflareR2Storage r2Storage,
-            ILogger<ChatController> logger)
+            ILogger<ChatController> logger,
+            IHubContext<ChatHub> chatHubContext)
         {
             _chatRoomRepository = chatRoomRepository;
             _chatMessageRepository = chatMessageRepository;
@@ -36,6 +40,7 @@ namespace TheVehicleEcosystemAPI.Controllers
             _garageRepository = garageRepository;
             _r2Storage = r2Storage;
             _logger = logger;
+            _chatHubContext = chatHubContext;
         }
 
         /// <summary>
@@ -197,8 +202,18 @@ namespace TheVehicleEcosystemAPI.Controllers
                     UpdatedAt = createdMessage.UpdatedAt?.DateTime
                 };
 
-                // TODO: Push message via SignalR to all participants
-                // await _chatHub.Clients.Group($"room_{request.RoomId}").SendAsync("ReceiveMessage", response);
+                // UC-02: Push message via SignalR to all participants in real-time
+                try
+                {
+                    await _chatHubContext.Clients.Group($"room_{request.RoomId}")
+                        .SendAsync("ReceiveMessage", response);
+                    _logger.LogInformation("Message broadcast to room {RoomId} via SignalR", request.RoomId);
+                }
+                catch (Exception signalREx)
+                {
+                    // Don't fail the request if SignalR fails
+                    _logger.LogWarning(signalREx, "Failed to broadcast message via SignalR to room {RoomId}", request.RoomId);
+                }
 
                 return Ok(ApiResponse<MessageResponseDTO>.Created("Message sent successfully.", response));
             }
@@ -390,6 +405,241 @@ namespace TheVehicleEcosystemAPI.Controllers
                 }
 
                 return Ok(ApiResponse<List<ChatRoomResponseDTO>>.Success("Chat rooms retrieved successfully.", responseList));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.InternalError($"An error occurred: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// UC-03: Edit a message (only sender can edit)
+        /// </summary>
+        [HttpPatch("messages/{messageId}/edit")]
+        public async Task<IActionResult> EditMessage(long messageId, [FromBody] EditMessageRequestDTO request)
+        {
+            try
+            {
+                // Validate message content
+                if (string.IsNullOrWhiteSpace(request.Message))
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Message content cannot be empty."));
+                }
+
+                // Get the message
+                var message = await _chatMessageRepository.GetByIdAsync(messageId);
+                if (message == null)
+                {
+                    return NotFound(ApiResponse<object>.NotFound($"Message with ID {messageId} not found."));
+                }
+
+                // Verify sender permission - only sender can edit their message
+                if (message.SenderId != request.SenderId || message.SenderType != (SenderType)request.SenderType)
+                {
+                    return Forbid();
+                }
+
+                // Cannot edit hidden messages
+                if (message.Status == MessageStatus.HIDDEN)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Cannot edit a hidden message."));
+                }
+
+                // Update the message
+                var updatedMessage = await _chatMessageRepository.UpdateMessageAsync(messageId, request.Message, null);
+                if (updatedMessage == null)
+                {
+                    return StatusCode(500, ApiResponse<object>.InternalError("Failed to update message."));
+                }
+
+                // Prepare response
+                string senderName = GetSenderName(updatedMessage.SenderId, updatedMessage.SenderType);
+                var response = new MessageResponseDTO
+                {
+                    Id = updatedMessage.Id,
+                    RoomId = updatedMessage.RoomId,
+                    SenderType = updatedMessage.SenderType,
+                    SenderId = updatedMessage.SenderId,
+                    SenderName = senderName,
+                    Message = updatedMessage.Message,
+                    MessageType = updatedMessage.MessageType,
+                    FileUrl = updatedMessage.FileUrl,
+                    FileType = updatedMessage.FileType,
+                    Status = updatedMessage.Status,
+                    IsRead = updatedMessage.IsRead,
+                    CreatedAt = updatedMessage.CreatedAt?.DateTime ?? DateTime.UtcNow,
+                    UpdatedAt = updatedMessage.UpdatedAt?.DateTime ?? DateTime.UtcNow
+                };
+
+                // UC-03: Broadcast MessageEdited event via SignalR
+                try
+                {
+                    await _chatHubContext.Clients.Group($"room_{updatedMessage.RoomId}")
+                        .SendAsync("MessageEdited", response);
+                    _logger.LogInformation("Message edit broadcast to room {RoomId} via SignalR", updatedMessage.RoomId);
+                }
+                catch (Exception signalREx)
+                {
+                    _logger.LogWarning(signalREx, "Failed to broadcast message edit via SignalR");
+                }
+
+                return Ok(ApiResponse<MessageResponseDTO>.Success("Message edited successfully.", response));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error editing message {MessageId}", messageId);
+                return StatusCode(500, ApiResponse<object>.InternalError($"An error occurred: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// UC-03: Hide a message (soft delete - only sender can hide)
+        /// </summary>
+        [HttpPatch("messages/{messageId}/hide")]
+        public async Task<IActionResult> HideMessage(long messageId, [FromBody] HideMessageRequestDTO request)
+        {
+            try
+            {
+                // Get the message
+                var message = await _chatMessageRepository.GetByIdAsync(messageId);
+                if (message == null)
+                {
+                    return NotFound(ApiResponse<object>.NotFound($"Message with ID {messageId} not found."));
+                }
+
+                // Verify sender permission - only sender can hide their message
+                if (message.SenderId != request.SenderId || message.SenderType != (SenderType)request.SenderType)
+                {
+                    return Forbid();
+                }
+
+                // Already hidden
+                if (message.Status == MessageStatus.HIDDEN)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Message is already hidden."));
+                }
+
+                // Hide the message (soft delete)
+                var success = await _chatMessageRepository.DeleteMessageAsync(messageId);
+                if (!success)
+                {
+                    return StatusCode(500, ApiResponse<object>.InternalError("Failed to hide message."));
+                }
+
+                // UC-03: Broadcast MessageHidden event via SignalR
+                try
+                {
+                    await _chatHubContext.Clients.Group($"room_{message.RoomId}")
+                        .SendAsync("MessageHidden", new
+                        {
+                            messageId = messageId,
+                            roomId = message.RoomId,
+                            hiddenAt = DateTime.UtcNow
+                        });
+                    _logger.LogInformation("Message hidden broadcast to room {RoomId} via SignalR", message.RoomId);
+                }
+                catch (Exception signalREx)
+                {
+                    _logger.LogWarning(signalREx, "Failed to broadcast message hidden via SignalR");
+                }
+
+                return Ok(ApiResponse<object>.Success("Message hidden successfully.", new
+                {
+                    messageId = messageId,
+                    roomId = message.RoomId,
+                    hiddenAt = DateTime.UtcNow
+                }));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error hiding message {MessageId}", messageId);
+                return StatusCode(500, ApiResponse<object>.InternalError($"An error occurred: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// UC-02: Mark a specific message as read
+        /// </summary>
+        [HttpPost("messages/{messageId}/read")]
+        public async Task<IActionResult> MarkMessageAsRead(long messageId, [FromQuery] int userId, [FromQuery] long roomId)
+        {
+            try
+            {
+                var success = await _chatMessageRepository.MarkAsReadAsync(messageId);
+
+                if (!success)
+                {
+                    return NotFound(ApiResponse<object>.NotFound($"Message with ID {messageId} not found."));
+                }
+
+                // UC-02: Notify via SignalR that message has been read
+                try
+                {
+                    await _chatHubContext.Clients.Group($"room_{roomId}")
+                        .SendAsync("MessageRead", new
+                        {
+                            messageId = messageId,
+                            userId = userId,
+                            roomId = roomId,
+                            readAt = DateTime.UtcNow
+                        });
+                }
+                catch (Exception signalREx)
+                {
+                    _logger.LogWarning(signalREx, "Failed to broadcast read status via SignalR");
+                }
+
+                return Ok(ApiResponse<object>.Success("Message marked as read."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.InternalError($"An error occurred: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// UC-02: Mark all messages in a room as read for a specific user
+        /// </summary>
+        [HttpPost("rooms/{roomId}/read")]
+        public async Task<IActionResult> MarkAllMessagesAsRead(long roomId, [FromBody] int userId)
+        {
+            try
+            {
+                var count = await _chatMessageRepository.MarkAllAsReadAsync(roomId, userId);
+
+                var response = new
+                {
+                    roomId = roomId,
+                    userId = userId,
+                    markedCount = count
+                };
+
+                return Ok(ApiResponse<object>.Success($"{count} message(s) marked as read.", response));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.InternalError($"An error occurred: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// UC-02: Get unread message count for a user in a specific room
+        /// </summary>
+        [HttpGet("rooms/{roomId}/unread-count")]
+        public async Task<IActionResult> GetUnreadCount(long roomId, [FromQuery] int userId)
+        {
+            try
+            {
+                var count = await _chatMessageRepository.GetUnreadCountAsync(roomId, userId);
+
+                var response = new
+                {
+                    roomId = roomId,
+                    userId = userId,
+                    unreadCount = count
+                };
+
+                return Ok(ApiResponse<object>.Success("Unread count retrieved successfully.", response));
             }
             catch (Exception ex)
             {

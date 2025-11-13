@@ -23,6 +23,9 @@ namespace TheVehicleEcosystemAPI
             // Add services to the container.
             builder.Services.AddControllers();
 
+            // Add SignalR for real-time chat messaging
+            builder.Services.AddSignalR();
+
             // ✨ Register IHttpContextAccessor for accessing HttpContext in DbContext
             builder.Services.AddHttpContextAccessor();
 
@@ -131,7 +134,7 @@ namespace TheVehicleEcosystemAPI
                   )
                               .AllowAnyMethod()
                               .AllowAnyHeader()
-                              .AllowCredentials();
+                              .AllowCredentials(); // Required for SignalR
                     });
             });
 
@@ -208,6 +211,9 @@ Example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
             app.UseAuthorization();
 
             app.MapControllers();
+
+            // Map SignalR hub for real-time chat
+            app.MapHub<TheVehicleEcosystemAPI.Hubs.ChatHub>("/chathub");
 
             await app.RunAsync();
         }

@@ -50,8 +50,8 @@ namespace BusinessObjects.Models
         
         public bool IsActive { get; set; } = true;
 
-        // Foreign Key to Garage
         [Required]
+        // Foreign Key to Garage
         [ForeignKey(nameof(GarageId))]
         public int GarageId { get; set; }
         

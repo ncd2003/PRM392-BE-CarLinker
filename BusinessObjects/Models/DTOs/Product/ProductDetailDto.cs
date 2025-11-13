@@ -19,7 +19,6 @@ namespace BusinessObjects.Models.DTOs.Product
 
         // Dữ liệu đã được "làm phẳng"
         public string CategoryName { get; set; }
-        public string ManufacturerName { get; set; }
         public string BrandName { get; set; }
 
         // Danh sách các tùy chọn của sản phẩm (vd: Màu sắc, Kích thước)

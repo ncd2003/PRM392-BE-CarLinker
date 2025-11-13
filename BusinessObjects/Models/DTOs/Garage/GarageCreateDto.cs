@@ -10,6 +10,7 @@ namespace BusinessObjects.Models.DTOs.Garage
     public class GarageCreateDto
     {
         public string? Name { get; set; }
+        [EmailAddress]
         public string? Email { get; set; }
         public string? Description { get; set; }
         public string? OperatingTime { get; set; }

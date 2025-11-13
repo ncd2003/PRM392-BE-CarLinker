@@ -45,6 +45,7 @@ namespace TheVehicleEcosystemAPI
             builder.Services.AddScoped<BrandDAO>();
             builder.Services.AddScoped<ServiceCategoryDAO>();
             builder.Services.AddScoped<GarageDAO>();
+            builder.Services.AddScoped<GarageStaffDAO>();
             builder.Services.AddScoped<ServiceItemDAO>();
             builder.Services.AddScoped<ChatRoomDAO>();
             builder.Services.AddScoped<ChatMessageDAO>();
@@ -60,6 +61,7 @@ namespace TheVehicleEcosystemAPI
             builder.Services.AddScoped<IBrandRepository, BrandRepository>();
             builder.Services.AddScoped<IServiceCategoryRepository, ServiceCategoryRepository>();
             builder.Services.AddScoped<IGarageRepository, GarageRepository>();
+            builder.Services.AddScoped<IGarageStaffRepository, GarageStaffRepository>();
             builder.Services.AddScoped<IServiceItemRepository, ServiceItemRepository>();
             builder.Services.AddScoped<IChatRoomRepository, ChatRoomRepository>();
             builder.Services.AddScoped<IChatMessageRepository, ChatMessageRepository>();

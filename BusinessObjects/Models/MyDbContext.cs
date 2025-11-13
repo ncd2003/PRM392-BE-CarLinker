@@ -40,7 +40,6 @@ namespace BusinessObjects
         public DbSet<ChatRoom> ChatRoom { get; set; }
         public DbSet<ChatMessage> ChatMessage { get; set; }
         public DbSet<ChatRoomMember> ChatRoomMember { get; set; }
-        public DbSet<GarageStaff> GarageStaff { get; set; }
 
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

@@ -373,25 +373,6 @@ namespace BusinessObjects
                 .WithMany(g => g.ServiceRecords);
 
             // ==========================================================
-            // GARAGE STAFF CONFIGURATION
-            // ==========================================================
-            modelBuilder.Entity<GarageStaff>().ToTable("GarageStaff");
-
-            modelBuilder.Entity<GarageStaff>()
-                .HasIndex(gs => gs.Email)
-                .IsUnique();
-
-            modelBuilder.Entity<GarageStaff>()
-                .HasIndex(gs => gs.PhoneNumber)
-                .IsUnique();
-
-            modelBuilder.Entity<GarageStaff>()
-                .HasOne(gs => gs.Garage)
-                .WithMany()
-                .HasForeignKey(gs => gs.GarageId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            // ==========================================================
             // CHAT ROOM CONFIGURATION
             // ==========================================================
             modelBuilder.Entity<ChatRoom>().ToTable("ChatRoom");

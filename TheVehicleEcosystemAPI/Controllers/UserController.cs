@@ -72,7 +72,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// Lấy thông tin user theo ID (GARAGE có thể xem tất cả, user khác chỉ xem của mình)
         /// </summary>
         [HttpGet("{id}")]
-        [Authorize(Roles = "CUSTOMER,GARAGE")]
+        [Authorize(Roles = "CUSTOMER,GARAGE,CUSTOMER")]
         [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -81,12 +81,6 @@ namespace TheVehicleEcosystemAPI.Controllers
         {
             try
             {
-                // Kiểm tra quyền truy cập
-                //if (!UserContextHelper.CanAccessUserResource(User, id))
-                //{
-                //    return StatusCode(403, ApiResponse<object>.BadRequest("Bạn không có quyền xem thông tin user này"));
-                //}
-
                 var user = await _userRepository.GetByIdAsync(id);
                 if (user == null)
                 {

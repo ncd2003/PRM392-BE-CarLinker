@@ -47,6 +47,7 @@ namespace TheVehicleEcosystemAPI
             builder.Services.AddScoped<GarageDAO>();
             builder.Services.AddScoped<GarageStaffDAO>();
             builder.Services.AddScoped<ServiceItemDAO>();
+            builder.Services.AddScoped<ServiceRecordDAO>();
 
             // Register Repositories
             builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
@@ -60,6 +61,7 @@ namespace TheVehicleEcosystemAPI
             builder.Services.AddScoped<IGarageRepository, GarageRepository>();
             builder.Services.AddScoped<IGarageStaffRepository, GarageStaffRepository>();
             builder.Services.AddScoped<IServiceItemRepository, ServiceItemRepository>();
+            builder.Services.AddScoped<IServiceRecordRepository, ServiceRecordRepository>();
 
             // Register Cloudflare R2 Storage
             builder.Services.AddSingleton<CloudflareR2Storage>();

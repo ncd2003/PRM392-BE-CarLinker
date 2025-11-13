@@ -38,7 +38,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<ServiceCategoryDto>>> GetAllServiceCategories(
+        public async Task<ActionResult<ApiResponse<PaginatedData<ServiceCategoryDto>>>> GetAllServiceCategories(
            [FromQuery] int page = 1,
            [FromQuery] int size = 30,
            [FromQuery] string? sortBy = null,
@@ -46,9 +46,11 @@ namespace TheVehicleEcosystemAPI.Controllers
         {
             try
             {
-                var items = await _serviceCategoryRepository.GetAllAsync(page, size, sortBy, isAsc);
-                var serviceCategoryDtos = items.Adapt<IEnumerable<ServiceCategoryDto>>();
-                return Ok(ApiResponse<IEnumerable<ServiceCategoryDto>>.Success("Lấy danh sách gói dịch vụ thành công", serviceCategoryDtos));
+                var (items, total) = await _serviceCategoryRepository.GetAllAsync(page, size, sortBy, isAsc);
+                var serviceCategoryDtos = items.Select(sc => sc.Adapt<ServiceCategoryDto>());
+
+                var paginatedData = new PaginatedData<ServiceCategoryDto>(serviceCategoryDtos, total, page, size);
+                return Ok(ApiResponse<PaginatedData<ServiceCategoryDto>>.Success("Lấy danh sách gói dịch vụ thành công", paginatedData));
             }
             catch (ArgumentException ex)
             {

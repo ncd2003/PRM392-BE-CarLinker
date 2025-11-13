@@ -71,7 +71,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse<ServiceItemDto>>> GetServiceCategoryById(int id)
+        public async Task<ActionResult<ApiResponse<ServiceItemDto>>> GetServiceItemById(int id)
         {
             try
             {

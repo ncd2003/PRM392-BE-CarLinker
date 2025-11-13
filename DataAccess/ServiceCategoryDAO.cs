@@ -31,7 +31,7 @@ namespace DataAccess
             string? sortBy = null,
             bool isAsc = true)
         {
-            var query = _context.ServiceCategory.Where(v => v.IsActive);
+            var query = _context.ServiceCategory.Include(sc => sc.ServiceItems).Where(v => v.IsActive);
 
             // Get total before pagination
             var total = await query.CountAsync();
@@ -73,6 +73,7 @@ namespace DataAccess
         public async Task<ServiceCategory?> GetById(int id)
         {
             return await _context.ServiceCategory
+                .Include(sc => sc.ServiceItems)
                 .Where(v => v.IsActive)
                 .FirstOrDefaultAsync(v => v.Id == id);
         }

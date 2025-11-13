@@ -210,6 +210,81 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         /// <summary>
+        /// Đăng nhập cho GarageStaff
+        /// </summary>
+        [HttpPost("staff/login")]
+        [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<LoginResponseDto>>> StaffLogin([FromBody] LoginRequestDto request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Dữ liệu không hợp lệ"));
+                }
+
+                // Tìm staff theo email trong bảng GarageStaff
+                var staff = await _garageStaffRepository.GetByEmailAsync(request.Email);
+                if (staff == null)
+                {
+                    return Unauthorized(ApiResponse<object>.BadRequest("Email hoặc mật khẩu không đúng"));
+                }
+
+                // Kiểm tra mật khẩu
+                if (!BCrypt.Net.BCrypt.Verify(request.Password, staff.PasswordHash))
+                {
+                    return Unauthorized(ApiResponse<object>.BadRequest("Email hoặc mật khẩu không đúng"));
+                }
+
+                // Kiểm tra tài khoản có active không
+                if (!staff.IsActive)
+                {
+                    return Unauthorized(ApiResponse<object>.BadRequest("Tài khoản đã bị vô hiệu hóa"));
+                }
+
+                // Kiểm tra trạng thái user
+                if (staff.UserStatus != UserStatus.ACTIVE)
+                {
+                    return Unauthorized(ApiResponse<object>.BadRequest("Tài khoản chưa được kích hoạt"));
+                }
+
+                // Generate tokens cho GarageStaff
+                var accessToken = _jwtConfiguration.GenerateJwtTokenForGarageStaff(staff);
+                var refreshToken = _jwtConfiguration.GenerateRefreshToken(out DateTime refreshTokenExpiry);
+
+                // Lưu refresh token vào database
+                staff.RefreshToken = refreshToken;
+                staff.RefreshTokenExpiryTime = refreshTokenExpiry;
+                await _garageStaffRepository.UpdateAsync(staff);
+
+                var response = new LoginResponseDto
+                {
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken,
+                    User = new UserInfoDto
+                    {
+                        Id = staff.Id,
+                        Email = staff.Email,
+                        Role = staff.GarageRole.ToString(), // DEALER, WAREHOUSE, STAFF
+                    }
+                };
+
+                _logger.LogInformation("Staff logged in successfully: StaffId {StaffId}, GarageId {GarageId}, Role {Role}", 
+                    staff.Id, staff.GarageId, staff.GarageRole);
+
+                return Ok(ApiResponse<LoginResponseDto>.Success("Đăng nhập thành công", response));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during staff login");
+                return StatusCode(500, ApiResponse<object>.InternalError("Lỗi khi đăng nhập"));
+            }
+        }
+
+        /// <summary>
         /// Đăng nhập
         /// </summary>
         [HttpPost("login")]
@@ -430,6 +505,122 @@ namespace TheVehicleEcosystemAPI.Controllers
             {
                 _logger.LogError(ex, "Error getting current user");
                 return StatusCode(500, ApiResponse<object>.InternalError("Lỗi khi lấy thông tin user"));
+            }
+        }
+
+        /// <summary>
+        /// Refresh access token cho GarageStaff
+        /// </summary>
+        [HttpPost("staff/refresh")]
+        [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<LoginResponseDto>>> StaffRefreshToken([FromBody] RefreshTokenRequestDto request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Dữ liệu không hợp lệ"));
+                }
+
+                // Lấy staff id từ expired access token
+                var staffId = _jwtConfiguration.GetUserIdFromExpiredToken(request.AccessToken);
+                if (staffId == null)
+                {
+                    return Unauthorized(ApiResponse<object>.BadRequest("Access token không hợp lệ"));
+                }
+
+                // Lấy staff từ database
+                var staff = await _garageStaffRepository.GetByIdAsync(staffId.Value);
+                if (staff == null || !staff.IsActive)
+                {
+                    return Unauthorized(ApiResponse<object>.BadRequest("Staff không tồn tại hoặc đã bị vô hiệu hóa"));
+                }
+
+                // Validate refresh token
+                var (principal, expiryTimeFromToken) = _jwtConfiguration.ValidateRefreshToken(request.RefreshToken);
+                if (principal == null)
+                {
+                    return Unauthorized(ApiResponse<object>.BadRequest("Refresh token không hợp lệ hoặc đã hết hạn"));
+                }
+
+                // Kiểm tra refresh token trong database
+                if (staff.RefreshToken != request.RefreshToken)
+                {
+                    return Unauthorized(ApiResponse<object>.BadRequest("Refresh token không khớp"));
+                }
+
+                // Kiểm tra thời gian hết hạn
+                if (staff.RefreshTokenExpiryTime <= DateTime.UtcNow)
+                {
+                    return Unauthorized(ApiResponse<object>.BadRequest("Refresh token đã hết hạn"));
+                }
+
+                // Generate new tokens
+                var newAccessToken = _jwtConfiguration.GenerateJwtTokenForGarageStaff(staff);
+                var newRefreshToken = _jwtConfiguration.GenerateRefreshToken(out DateTime newRefreshTokenExpiry);
+
+                // Update refresh token in database
+                staff.RefreshToken = newRefreshToken;
+                staff.RefreshTokenExpiryTime = newRefreshTokenExpiry;
+                await _garageStaffRepository.UpdateAsync(staff);
+
+                var response = new LoginResponseDto
+                {
+                    AccessToken = newAccessToken,
+                    RefreshToken = newRefreshToken,
+                    User = new UserInfoDto
+                    {
+                        Id = staff.Id,
+                        Email = staff.Email,
+                        Role = staff.GarageRole.ToString(),
+                    }
+                };
+
+                return Ok(ApiResponse<LoginResponseDto>.Success("Làm mới token thành công", response));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during staff token refresh");
+                return StatusCode(500, ApiResponse<object>.InternalError("Lỗi khi làm mới token"));
+            }
+        }
+
+        /// <summary>
+        /// Đăng xuất cho GarageStaff
+        /// </summary>
+        [HttpPost("staff/logout")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<object>>> StaffLogout()
+        {
+            try
+            {
+                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "userId" || c.Type == System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int staffId))
+                {
+                    return Unauthorized(ApiResponse<object>.BadRequest("Staff không hợp lệ"));
+                }
+
+                var staff = await _garageStaffRepository.GetByIdAsync(staffId);
+                if (staff != null)
+                {
+                    // Xóa refresh token
+                    staff.RefreshToken = null;
+                    staff.RefreshTokenExpiryTime = null;
+                    await _garageStaffRepository.UpdateAsync(staff);
+                }
+
+                return Ok(ApiResponse<object>.Success("Đăng xuất thành công"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during staff logout");
+                return StatusCode(500, ApiResponse<object>.InternalError("Lỗi khi đăng xuất"));
             }
         }
     }

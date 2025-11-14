@@ -359,5 +359,37 @@ namespace TheVehicleEcosystemAPI.Controllers
                 return StatusCode(500, ApiResponse<object>.InternalError("Lỗi khi lấy thông tin chi tiết gara"));
             }
         }
+
+        /// <summary>
+        /// Lấy User ID của garage theo Garage ID
+        /// </summary>
+        [HttpGet("{garageId}/user-id")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<int>>> GetGarageUserId(int garageId)
+        {
+            try
+            {
+                var garageDB = await _garageRepository.GetByIdAsync(garageId);
+                if (garageDB == null)
+                {
+                    return NotFound(ApiResponse<object>.NotFound($"Không tìm thấy gara với ID {garageId}"));
+                }
+
+                _logger.LogInformation("Retrieved User ID {UserId} for Garage {GarageId}", 
+                    garageDB.UserId, garageId);
+
+                return Ok(ApiResponse<int>.Success(
+                    "Lấy User ID của gara thành công",
+                    garageDB.UserId));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting User ID for garage {GarageId}", garageId);
+                return StatusCode(500, ApiResponse<object>.InternalError("Lỗi khi lấy User ID của gara"));
+            }
+        }
     }
 }

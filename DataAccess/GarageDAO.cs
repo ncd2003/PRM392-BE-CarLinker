@@ -80,6 +80,17 @@ namespace DataAccess
                 .FirstOrDefaultAsync(g => g.UserId == userId && g.IsActive);
         }
 
+        public async Task<IEnumerable<Garage>> GetAllByUserId(int userId)
+        {
+            return await _context.Garage
+                .Include(g => g.GarageServiceItems)
+                    .ThenInclude(gsi => gsi.ServiceItem)
+                        .ThenInclude(si => si.ServiceCategory)
+                .Where(g => g.UserId == userId && g.IsActive)
+                .OrderByDescending(g => g.CreatedAt)
+                .ToListAsync();
+        }
+
         public async Task Update(Garage garage)
         {
             _context.Garage.Update(garage);

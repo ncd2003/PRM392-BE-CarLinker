@@ -1,6 +1,7 @@
 ﻿using BusinessObjects.Models;
 using BusinessObjects.Models.DTOs.Cart;
 using BusinessObjects.Models.DTOs.Garage;
+using BusinessObjects.Models.DTOs.GarageStaff;
 using BusinessObjects.Models.DTOs.Order;
 using BusinessObjects.Models.DTOs.Product;
 using BusinessObjects.Models.DTOs.Product.OptionValue;
@@ -74,6 +75,26 @@ namespace TheVehicleEcosystemAPI.Utils
                 .Ignore(dest => dest.CreatedAt)
                 .Ignore(dest => dest.UpdatedAt)
                 .Ignore(dest => dest.IsActive);
+
+            // GarageStaff to GarageStaffDto mapping with GarageName
+            TypeAdapterConfig<GarageStaff, GarageStaffDto>
+                .NewConfig()
+                .Map(dest => dest.GarageName, src => src.Garage != null ? src.Garage.Name : null);
+
+            // GarageStaffUpdateDto to GarageStaff - ignore sensitive fields
+            TypeAdapterConfig<GarageStaffUpdateDto, GarageStaff>
+                .NewConfig()
+                .Ignore(dest => dest.Id)
+                .Ignore(dest => dest.Email)
+                .Ignore(dest => dest.PasswordHash)
+                .Ignore(dest => dest.RefreshToken)
+                .Ignore(dest => dest.RefreshTokenExpiryTime)
+                .Ignore(dest => dest.Image)
+                .Ignore(dest => dest.IsActive)
+                .Ignore(dest => dest.GarageId)
+                .Ignore(dest => dest.Garage)
+                .Ignore(dest => dest.CreatedAt)
+                .Ignore(dest => dest.UpdatedAt);
 
             // ServiceItem and ServiceCategory mappings
             TypeAdapterConfig<ServiceItem, ServiceItemDto>.NewConfig();

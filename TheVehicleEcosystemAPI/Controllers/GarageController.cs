@@ -391,5 +391,44 @@ namespace TheVehicleEcosystemAPI.Controllers
                 return StatusCode(500, ApiResponse<object>.InternalError("Lỗi khi lấy User ID của gara"));
             }
         }
+
+        /// <summary>
+        /// Lấy tất cả garage theo User ID
+        /// </summary>
+        [HttpGet("user/{userId}")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<GarageDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<IEnumerable<GarageDto>>>> GetGaragesByUserId(int userId)
+        {
+            try
+            {
+                if (userId <= 0)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("User ID không hợp lệ"));
+                }
+
+                var garages = await _garageRepository.GetAllByUserIdAsync(userId);
+                var garageDtos = garages.Select(g => g.Adapt<GarageDto>()).ToList();
+
+                _logger.LogInformation("Retrieved {Count} garages for User ID {UserId}", 
+                    garageDtos.Count, userId);
+
+                return Ok(ApiResponse<IEnumerable<GarageDto>>.Success(
+                    $"Lấy danh sách gara của user thành công ({garageDtos.Count} gara)",
+                    garageDtos));
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Invalid argument for User ID {UserId}", userId);
+                return BadRequest(ApiResponse<object>.BadRequest(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting garages for User ID {UserId}", userId);
+                return StatusCode(500, ApiResponse<object>.InternalError("Lỗi khi lấy danh sách gara của user"));
+            }
+        }
     }
 }

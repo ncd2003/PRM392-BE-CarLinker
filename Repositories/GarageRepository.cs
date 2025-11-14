@@ -96,6 +96,16 @@ namespace Repositories
             return await _garageDAO.GetByUserId(userId);
         }
 
+        public async Task<IEnumerable<Garage>> GetAllByUserIdAsync(int userId)
+        {
+            if (userId <= 0)
+            {
+                throw new ArgumentException("User ID must be greater than 0", nameof(userId));
+            }
+
+            return await _garageDAO.GetAllByUserId(userId);
+        }
+
         public async Task UpdateGarageServiceItemAsync(Garage garage)
         {
             if (garage == null)

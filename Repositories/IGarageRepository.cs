@@ -16,6 +16,7 @@ namespace Repositories
             bool isAsc = true);
         Task<Garage?> GetByIdAsync(int id);
         Task<Garage?> GetByUserIdAsync(int userId);
+        Task<IEnumerable<Garage>> GetAllByUserIdAsync(int userId);
         Task AddAsync(Garage garage);
         Task UpdateAsync(Garage garage);
         Task UpdateGarageServiceItemAsync(Garage garage);

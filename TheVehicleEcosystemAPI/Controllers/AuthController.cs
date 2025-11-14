@@ -623,5 +623,111 @@ namespace TheVehicleEcosystemAPI.Controllers
                 return StatusCode(500, ApiResponse<object>.InternalError("Lỗi khi đăng xuất"));
             }
         }
+
+        /// <summary>
+        /// Đổi mật khẩu cho User (không cần mật khẩu cũ)
+        /// </summary>
+        [HttpPost("change-password")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<object>>> ChangePassword([FromBody] ChangePasswordRequestDto request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Dữ liệu không hợp lệ"));
+                }
+
+                // Tìm user theo email
+                var user = await _userRepository.GetByEmailAsync(request.Email);
+                if (user == null)
+                {
+                    return NotFound(ApiResponse<object>.NotFound("Email không tồn tại trong hệ thống"));
+                }
+
+                // Kiểm tra tài khoản có active không
+                if (!user.IsActive)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Tài khoản đã bị vô hiệu hóa"));
+                }
+
+                // Hash mật khẩu mới
+                var newPasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+
+                // Cập nhật mật khẩu
+                user.PasswordHash = newPasswordHash;
+                
+                // Xóa refresh token cũ để buộc đăng nhập lại
+                user.RefreshToken = null;
+                user.RefreshTokenExpiryTime = null;
+                
+                await _userRepository.UpdateAsync(user);
+
+                _logger.LogInformation("Password changed successfully for user {Email}", request.Email);
+
+                return Ok(ApiResponse<object>.Success("Đổi mật khẩu thành công. Vui lòng đăng nhập lại."));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error changing password for email {Email}", request.Email);
+                return StatusCode(500, ApiResponse<object>.InternalError("Lỗi khi đổi mật khẩu"));
+            }
+        }
+
+        /// <summary>
+        /// Đổi mật khẩu cho Garage Staff (không cần mật khẩu cũ)
+        /// </summary>
+        [HttpPost("staff/change-password")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<object>>> ChangeStaffPassword([FromBody] ChangePasswordRequestDto request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Dữ liệu không hợp lệ"));
+                }
+
+                // Tìm garage staff theo email
+                var staff = await _garageStaffRepository.GetByEmailAsync(request.Email);
+                if (staff == null)
+                {
+                    return NotFound(ApiResponse<object>.NotFound("Email không tồn tại trong hệ thống garage staff"));
+                }
+
+                // Kiểm tra tài khoản có active không
+                if (!staff.IsActive)
+                {
+                    return BadRequest(ApiResponse<object>.BadRequest("Tài khoản staff đã bị vô hiệu hóa"));
+                }
+
+                // Hash mật khẩu mới
+                var newPasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+
+                // Cập nhật mật khẩu
+                staff.PasswordHash = newPasswordHash;
+                
+                // Xóa refresh token cũ để buộc đăng nhập lại
+                staff.RefreshToken = null;
+                staff.RefreshTokenExpiryTime = null;
+                
+                await _garageStaffRepository.UpdateAsync(staff);
+
+                _logger.LogInformation("Password changed successfully for garage staff {Email}", request.Email);
+
+                return Ok(ApiResponse<object>.Success("Đổi mật khẩu staff thành công. Vui lòng đăng nhập lại."));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error changing password for garage staff {Email}", request.Email);
+                return StatusCode(500, ApiResponse<object>.InternalError("Lỗi khi đổi mật khẩu staff"));
+            }
+        }
     }
 }

@@ -6,11 +6,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Repositories;
 using TheVehicleEcosystemAPI.Response.DTOs;
+using TheVehicleEcosystemAPI.Utils;
 
 namespace TheVehicleEcosystemAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class OrderController : ControllerBase
     {
         private readonly IOrderRepository _orderRepository;
@@ -22,6 +24,7 @@ namespace TheVehicleEcosystemAPI.Controllers
             _logger = logger;
         }
 
+        [Authorize(Roles = "CUSTOMER")]
         [HttpPost("create-order")]
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto orderDto)
         {
@@ -29,17 +32,12 @@ namespace TheVehicleEcosystemAPI.Controllers
             {
                 return BadRequest(ApiResponse<string>.BadRequest("Dữ liệu không hợp lệ"));
             }
-
+            int UserId = UserContextHelper.GetUserId(User).Value;
             try
             {
-                //var userId = GetUserId();
-
                 // 1. Lấy model Order gốc từ DAO
-                Order newOrder = await _orderRepository.CreateOrderFromCart(16, orderDto);
+                Order newOrder = await _orderRepository.CreateOrderFromCart(UserId, orderDto);
 
-                // 2. DÙNG MAPSTER ĐỂ CHUYỂN ĐỔI
-                // Tự động map Order -> OrderResponseDto và 
-                // Order.OrderItems -> List<OrderItemDto>
                 var orderResponse = newOrder.Adapt<OrderResponseDto>();
 
                 // 3. Trả về DTO đã được map
@@ -47,7 +45,7 @@ namespace TheVehicleEcosystemAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Lỗi nghiệp vụ khi tạo đơn hàng cho UserID {UserId}: {Message}", 16, ex.Message);
+                _logger.LogWarning(ex, "Lỗi nghiệp vụ khi tạo đơn hàng cho UserID {UserId}: {Message}", UserId, ex.Message);
                 return BadRequest(ApiResponse<string>.BadRequest(ex.Message));
             }
         }
@@ -55,22 +53,23 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// <summary>
         /// Lấy lịch sử đơn hàng của người dùng đang đăng nhập.
         /// </summary>
+        [Authorize(Roles = "CUSTOMER")]
         [HttpGet("my-orders")]
         public async Task<IActionResult> GetMyOrders()
         {
+            int UserId = UserContextHelper.GetUserId(User).Value;
             try
             {
-                //var userId = GetUserId();
-                var orders = await _orderRepository.GetOrdersByUserId(16);
+                var orders = await _orderRepository.GetOrdersByUserId(UserId);
 
                 // Map sang DTO
                 var orderDtos = orders.Adapt<List<OrderResponseDto>>();
 
-                return Ok(ApiResponse<List<OrderResponseDto>>.Success("Lấy đơn hàng thành công",orderDtos));
+                return Ok(ApiResponse<List<OrderResponseDto>>.Success("Lấy đơn hàng thành công", orderDtos));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lấy đơn hàng cho UserID {UserId}", 16);
+                _logger.LogError(ex, "Lỗi khi lấy đơn hàng cho UserID {UserId}", UserId);
                 return StatusCode(500, ApiResponse<string>.InternalError("Lỗi máy chủ."));
             }
         }
@@ -79,6 +78,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// Lấy chi tiết của một đơn hàng.
         /// Chỉ chủ đơn hàng hoặc Admin mới có quyền xem.
         /// </summary>
+        [Authorize(Roles = "CUSTOMER,DEALER")]
         [HttpGet("{orderId}")]
         public async Task<IActionResult> GetOrderDetails(int orderId)
         {
@@ -91,13 +91,7 @@ namespace TheVehicleEcosystemAPI.Controllers
                     return NotFound(ApiResponse<string>.NotFound("Không tìm thấy đơn hàng."));
                 }
 
-                // Kiểm tra quyền sở hữu
-                //var userId = GetUserId();
-                int userId = 16;
-                if (order.UserId != userId && !User.IsInRole("Admin")) // Giả sử vai trò Admin là "Admin"
-                {
-                    return Forbid("Bạn không có quyền xem đơn hàng này.");
-                }
+                int UserId = UserContextHelper.GetUserId(User).Value;
 
                 var orderDto = order.Adapt<OrderResponseDto>();
                 return Ok(ApiResponse<OrderResponseDto>.Success("Lấy đơn hàng thành công", orderDto));
@@ -112,18 +106,15 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// <summary>
         /// Khách hàng tự hủy đơn hàng (chỉ khi đơn ở trạng thái "Pending").
         /// </summary>
+        [Authorize(Roles = "CUSTOMER")]
         [HttpPut("cancel/{orderId}")]
         public async Task<IActionResult> CancelOrder(int orderId)
         {
             try
             {
-                //var userId = GetUserId();
-                int userId = 16;
+                int UserId = UserContextHelper.GetUserId(User).Value;
 
-                // Kiểm tra xem người gọi có phải Admin không
-                int? userIdCheck = User.IsInRole("Admin") ? (int?)null : userId;
-
-                await _orderRepository.CancelOrderAsync(orderId, userIdCheck);
+                await _orderRepository.CancelOrderAsync(orderId, UserId);
 
                 return Ok(ApiResponse<string>.Success("Hủy đơn hàng thành công. Hàng đã được hoàn lại kho."));
             }
@@ -141,8 +132,8 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// <summary>
         /// [Admin] Lấy tất cả đơn hàng trong hệ thống.
         /// </summary>
+        [Authorize(Roles = "DEALER")]
         [HttpGet("all-orders")]
-        //[Authorize(Roles = "Admin")] // Chỉ Admin
         public async Task<IActionResult> GetAllOrders()
         {
             try
@@ -161,8 +152,8 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// <summary>
         /// [Admin] Cập nhật trạng thái của một đơn hàng.
         /// </summary>
+        [Authorize(Roles = "DEALER")]
         [HttpPut("update-status")]
-        //[Authorize(Roles = "Admin")] // Chỉ Admin
         public async Task<IActionResult> UpdateStatus([FromBody] UpdateOrderStatusDto dto)
         {
             if (!ModelState.IsValid)
@@ -186,7 +177,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// [Admin] Lấy tổng số đơn hàng trong hệ thống.
         /// </summary>
         [HttpGet("statistics/total-count")]
-        //[Authorize(Roles = "Admin")]
+        [Authorize(Roles = "DEALER")]
         public async Task<IActionResult> GetTotalOrderCount()
         {
             try
@@ -205,7 +196,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         /// [Admin] Lấy số đơn hàng đang chờ xử lý (Pending).
         /// </summary>
         [HttpGet("statistics/pending-count")]
-        //[Authorize(Roles = "Admin")]
+        [Authorize(Roles = "DEALER")]
         public async Task<IActionResult> GetPendingOrderCount()
         {
             try
@@ -217,14 +208,15 @@ namespace TheVehicleEcosystemAPI.Controllers
             {
                 _logger.LogError(ex, "Lỗi khi lấy số đơn hàng PENDING.");
                 return StatusCode(500, ApiResponse<string>.InternalError("Lỗi máy chủ."));
-             }
+            }
         }
+
 
         /// <summary>
         /// [Admin] Lấy tổng doanh thu (từ các đơn đã DELIVERED).
         /// </summary>
         [HttpGet("statistics/total-revenue")]
-        //[Authorize(Roles = "Admin")]
+        [Authorize(Roles = "DEALER")]
         public async Task<IActionResult> GetTotalRevenue()
         {
             try
@@ -240,3 +232,6 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
     }
 }
+
+
+

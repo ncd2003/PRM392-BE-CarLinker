@@ -30,7 +30,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "GARAGE")]
+        [Authorize(Roles = "STAFF")]
         [ProducesResponseType(typeof(ApiResponse<PaginatedData<ServiceRecordDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -102,7 +102,7 @@ namespace TheVehicleEcosystemAPI.Controllers
 
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "CUSTOMER, GARAGE")]
+        [Authorize(Roles = "CUSTOMER, STAFF")]
         [ProducesResponseType(typeof(ApiResponse<ServiceRecordDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]

@@ -8,12 +8,13 @@ using Microsoft.AspNetCore.Mvc;
 using Repositories;
 using System.Security.Claims;
 using TheVehicleEcosystemAPI.Response.DTOs;
+using TheVehicleEcosystemAPI.Utils;
 
 namespace TheVehicleEcosystemAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     public class CartController : ControllerBase
     {
         private readonly ICartRepository _cartRepository;
@@ -26,12 +27,13 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         //Get list cart items
+        [Authorize(Roles = "CUSTOMER")]
         [HttpGet("get-list-cart-items")]
         public async Task<IActionResult> GetListCartItems()
         {
             try
             {
-                int UserId = 16;
+                int UserId = UserContextHelper.GetUserId(User).Value;
                 var cartId = await _cartRepository.GetCartIdByUserId(UserId);
                 var listCartItem = await _cartRepository.GetListCartItemByCartId(cartId);
 
@@ -53,6 +55,7 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         //Add product to cart
+        [Authorize(Roles = "CUSTOMER")]
         [HttpPost("Add-product-to-cart")]
         public async Task<IActionResult> AddToCart([FromBody] AddProductVariantDto productDto)
         {
@@ -63,9 +66,9 @@ namespace TheVehicleEcosystemAPI.Controllers
 
             try
             {
-                int userId = 16; 
+                int UserId = UserContextHelper.GetUserId(User).Value;
 
-                var cartItem = await _cartRepository.AddProductToCart(productDto, userId);
+                var cartItem = await _cartRepository.AddProductToCart(productDto, UserId);
 
                 // Map sang DTO
                 var cartItemDto = cartItem.Adapt<CartItemDto>();
@@ -86,8 +89,9 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         //Update cart item quantity
+        [Authorize(Roles = "CUSTOMER")]
         [HttpPut("update-quantity-item")]
-        public async Task<IActionResult> UpdateCartItem([FromBody] UpdateCartItemDto itemDto) 
+        public async Task<IActionResult> UpdateCartItem([FromBody] UpdateCartItemDto itemDto)
         {
             if (!ModelState.IsValid)
             {
@@ -96,11 +100,9 @@ namespace TheVehicleEcosystemAPI.Controllers
 
             try
             {
-                //var userId = GetUserId();
-                int userId = 16;
+                int UserId = UserContextHelper.GetUserId(User).Value;
 
-                // Giả định: Repository có hàm này, gọi xuống DAO
-                var cartItem = await _cartRepository.UpdateCartItemQuantity(userId, itemDto.ProductVariantId, itemDto.NewQuantity);
+                var cartItem = await _cartRepository.UpdateCartItemQuantity(UserId, itemDto.ProductVariantId, itemDto.NewQuantity);
                 // Map sang DTO
                 var cartItemDto = cartItem.Adapt<CartItemDto>();
                 //var cartId = await _cartRepository.GetCartIdByUserId(16);
@@ -118,16 +120,16 @@ namespace TheVehicleEcosystemAPI.Controllers
         }
 
         // Remove item from cart
+        [Authorize(Roles = "CUSTOMER")]
         [HttpDelete("remove-item/{productVariantId}")]
         public async Task<IActionResult> RemoveFromCart(int productVariantId)
         {
             try
             {
-                //var userId = GetUserId();
-                // Giả định repository có hàm này
-                await _cartRepository.RemoveItemFromCart(16, productVariantId);
+                int UserId = UserContextHelper.GetUserId(User).Value;
+                await _cartRepository.RemoveItemFromCart(UserId, productVariantId);
 
-                var cartId = await _cartRepository.GetCartIdByUserId(16);
+                var cartId = await _cartRepository.GetCartIdByUserId(UserId);
 
                 // Trả về giỏ hàng mới nhất
                 var updatedCart = await _cartRepository.GetListCartItemByCartId(cartId);
@@ -142,30 +144,8 @@ namespace TheVehicleEcosystemAPI.Controllers
             }
         }
 
-
-        /// <summary>
-        /// Helper: Lấy UserId từ Claims của token.
-        /// </summary>
-        private int GetUserId()
-        {
-            // Tìm Claim "NameIdentifier" (thường chứa UserId)
-            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userIdString))
-            {
-                // Lỗi này không nên xảy ra nếu [Authorize] được dùng đúng
-                throw new UnauthorizedAccessException("Không thể xác định người dùng. Token không hợp lệ.");
-            }
-
-            if (int.TryParse(userIdString, out int userId))
-            {
-                return userId;
-            }
-
-            // Lỗi này chỉ ra token bị cấu hình sai
-            throw new BadHttpRequestException("Dữ liệu token người dùng (UserId) không hợp lệ.");
-        }
-
-
     }
 }
+
+
+

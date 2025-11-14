@@ -30,7 +30,7 @@ namespace TheVehicleEcosystemAPI.Controllers
 
 
         [HttpGet]
-        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "ADMIN,GARAGE")]
         [ProducesResponseType(typeof(ApiResponse<PaginatedData<ServiceItemDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
